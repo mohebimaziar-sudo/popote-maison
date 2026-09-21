@@ -16,9 +16,21 @@ Toute la famille, sur téléphone. Un seul lien partagé, données communes en d
 - Nombre de personnes par repas
 - Choix d'une recette du carnet
 - Bouton « Générer les courses »
+- « Proposer une semaine » (2026-09-21) : remplit les repas vides avec des plats variés
+  (pas deux fois la même catégorie de suite, au moins un végétarien), pour N personnes,
+  en respectant un budget si on en donne un ; option « privilégier les plats à congeler »
+  (portions doublées, marquées congélateur)
+- Coût de la semaine affiché en haut (avec tes prix, sinon indicatif)
 - Marquage « à congeler » pour les plats cuisinés en avance (à préciser)
 
 ### 2. Recette
+- Catalogue de départ (2026-09-21) : 52 plats familiaux (classiques français + plats persans),
+  chacun avec ingrédients pour N personnes, temps, catégorie, étiquettes et coût indicatif
+- Recherche par nom ou ingrédient ; filtres : rapide, à congeler, végétarien, pas cher,
+  enfants, au four, persan, mes recettes
+- « Rapide » (≤ 25 min) et « pas cher » (≤ 2 €/pers.) se déduisent automatiquement
+- Coût affiché : calculé avec les prix saisis quand ils couvrent tous les ingrédients,
+  sinon coût indicatif (prix moyens supermarché) marqué comme tel
 - Nom, nombre de personnes de base, temps
 - Ingrédients avec quantités (recalculées selon le nombre de personnes du menu)
 - Étapes
