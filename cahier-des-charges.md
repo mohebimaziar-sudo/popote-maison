@@ -55,6 +55,11 @@ Toute la famille, sur téléphone. Un seul lien partagé, données communes en d
 - Saison : l'app connaît la saison en cours (avril-septembre = printemps-été, sinon
   automne-hiver). Pastille « De saison » dans le carnet ; « Proposer une semaine » écarte
   les plats de la saison opposée et privilégie ceux de la saison en cours (coché par défaut)
+- Déroulé détaillé (2026-09-21, demande de Maziar : « recettes trop bâclées ») : chaque plat du
+  catalogue a 5 à 7 étapes précises avec temps, températures, repères de cuisson et astuces
+  (repos, congélation). Les quantités ajustées sont arrondies façon cuisine (330 g, 1,5 oignon,
+  1 pincée), jamais 333,33 g
+- Ordre des onglets : Semaine, Courses, Recettes, Prix, Stock (Recettes après Courses)
 - Nom, nombre de personnes de base, temps
 - Ingrédients avec quantités (recalculées selon le nombre de personnes du menu)
 - Étapes
