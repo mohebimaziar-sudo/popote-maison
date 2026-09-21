@@ -15,6 +15,11 @@ Toute la famille, sur téléphone. Un seul lien partagé, données communes en d
 - Une ligne par repas : jour + déjeuner / dîner
 - Nombre de personnes par repas
 - Choix d'une recette du carnet
+- Choix d'une recette pour un repas (2026-09-21, demande de Maziar : filtrer d'abord, intégrer
+  ensuite) : le repas ouvre un sélecteur avec la même recherche et les mêmes filtres que le
+  carnet ; on filtre, on tape le plat, il est placé. Depuis le carnet filtré, « Mettre au menu »
+  sur une recette demande le repas (jour + déjeuner/dîner, les libres en premier), le nombre
+  de personnes et la case congélateur
 - Bouton « Générer les courses »
 - « Proposer une semaine » (2026-09-21) : remplit les repas vides avec des plats variés
   (pas deux fois la même catégorie de suite, au moins un végétarien), pour N personnes,
