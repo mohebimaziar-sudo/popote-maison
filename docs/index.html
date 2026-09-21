@@ -381,6 +381,7 @@ function toBase(q,u){if(u==='kg')return q*1000;if(u==='l')return q*1000;if(u==='
 /* Arrondis de cuisine : 333,33 g devient 330 g, 0,67 pincée devient 1 pincée, 1,33 oignon devient 1,5 */
 function cookRound(q,f){
   if(f==='g'||f==='ml'){if(q<20)return Math.max(1,Math.round(q));if(q<100)return Math.round(q/5)*5;if(q<1000)return Math.round(q/10)*10;return Math.round(q/50)*50}
+  if(f==='pincée'||f==='gousse'||f==='pot'||f==='boîte'||f==='sachet'||f==='botte')return Math.max(1,Math.round(q));
   return Math.max(0.5,Math.round(q*2)/2);
 }
 function fmtQty(q,f){
