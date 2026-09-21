@@ -115,6 +115,9 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{border:1px solid var(--line);background:var(--ground);border-radius:999px;padding:6px 12px;font-size:14px;cursor:pointer}
 .chip:hover{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-text)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:500}
+.rec .cost.approx{color:var(--muted)}
+.rec .tag{margin-left:0;margin-right:4px}
 @media (prefers-reduced-motion: reduce){.toast{transition:none}}
 </style>
 
@@ -163,25 +166,108 @@ const MEALS=[['lunch','Déjeuner'],['dinner','Dîner']];
 /* ---------- state ---------- */
 function uid(){return Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4)}
 function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+/* Catalogue de départ : [nom, personnes, minutes, catégorie, étiquettes, coût indicatif € (pour le nombre de personnes), ingrédients, étapes] */
+const CATS_R=['Viande','Volaille','Poisson','Végétarien','Pâtes et riz','Soupe','Salade','Œufs et tartes','Mijoté'];
+const TAGS=['rapide','congélateur','végétarien','pas cher','enfants','four','persan'];
+const CATALOG_VERSION=1;
+const CATALOG=[
+['Pâtes au pesto',4,20,'Pâtes et riz',['végétarien','enfants'],6,['400 g pâtes','1 pot pesto','50 g parmesan','30 g pignons'],['Cuire les pâtes al dente.','Mélanger avec le pesto hors du feu.','Servir avec le parmesan et les pignons.']],
+['Pâtes au thon et tomates',4,20,'Pâtes et riz',['enfants'],7,['400 g pâtes','2 boîte thon','1 boîte tomates concassées','1 oignon','2 cs huile d’olive','1 gousse ail'],['Faire revenir l’oignon et l’ail.','Ajouter les tomates, laisser réduire 10 min, puis le thon.','Mélanger aux pâtes cuites.']],
+['Spaghettis bolognaise',8,60,'Mijoté',['congélateur','enfants'],16,['800 g bœuf haché','2 oignons','2 carottes','2 gousse ail','2 boîte tomates concassées','1 cs concentré de tomate','800 g spaghetti','2 cs huile d’olive'],['Faire revenir oignons, carottes râpées et ail.','Ajouter la viande, puis tomates et concentré. Mijoter 40 min.','La moitié de la sauce au congélateur, le reste avec les spaghettis.']],
+['Lasagnes',6,80,'Mijoté',['congélateur','enfants','four'],15,['600 g bœuf haché','2 boîte tomates concassées','1 oignon','12 feuilles de lasagne','50 cl lait','40 g beurre','40 g farine','150 g gruyère râpé'],['Préparer une sauce tomate à la viande.','Préparer une béchamel avec beurre, farine, lait.','Monter en couches, gruyère dessus, 35 min au four à 180°.']],
+['Riz cantonais',4,25,'Pâtes et riz',['enfants'],7,['300 g riz','150 g petits pois','150 g jambon','3 œuf','2 cs sauce soja','1 oignon','2 cs huile'],['Cuire le riz et le laisser refroidir.','Faire une omelette fine, la couper en lamelles.','Tout faire sauter ensemble avec la sauce soja.']],
+['Risotto aux champignons',4,40,'Pâtes et riz',['végétarien'],9,['300 g riz arborio','400 g champignons','1 oignon','1 l bouillon de légumes','60 g parmesan','20 g beurre','2 cs huile d’olive'],['Faire revenir oignon et champignons.','Ajouter le riz, puis le bouillon louche par louche, 18 min.','Terminer avec beurre et parmesan.']],
+['Gratin de pâtes au jambon',6,40,'Pâtes et riz',['enfants','four','congélateur'],9,['500 g pâtes','200 g jambon','50 cl lait','40 g beurre','40 g farine','150 g gruyère râpé'],['Cuire les pâtes.','Préparer une béchamel, mélanger avec pâtes et jambon en dés.','Gruyère dessus, 20 min au four à 200°.']],
+['Poulet rôti et pommes de terre',4,75,'Volaille',['enfants','four'],14,['1 poulet','1 kg pommes de terre','3 gousse ail','2 cs huile d’olive','1 branche thym'],['Frotter le poulet d’huile, sel, thym.','Entourer de pommes de terre et d’ail.','1 h 15 au four à 200°, en arrosant.']],
+['Poulet au curry et riz',4,35,'Volaille',['enfants','congélateur'],12,['600 g blanc de poulet','300 g riz basmati','1 oignon','20 cl lait de coco','2 cs curry','2 cs huile'],['Faire dorer le poulet en morceaux avec l’oignon.','Ajouter le curry, le lait de coco, mijoter 15 min.','Servir avec le riz.']],
+['Poulet basquaise',4,60,'Volaille',['congélateur'],13,['4 cuisses de poulet','3 poivrons','1 boîte tomates concassées','2 oignons','2 gousse ail','300 g riz','2 cs huile d’olive'],['Faire dorer les cuisses.','Ajouter oignons, poivrons, ail, tomates. Mijoter 40 min.','Servir avec le riz.']],
+['Escalopes de dinde à la crème',4,25,'Volaille',['enfants'],11,['4 escalopes de dinde','20 cl crème fraîche','250 g champignons','400 g tagliatelles','1 cs moutarde'],['Saisir les escalopes.','Faire sauter les champignons, ajouter crème et moutarde.','Servir avec les pâtes.']],
+['Tajine de poulet aux olives et citron',4,60,'Volaille',['congélateur'],13,['4 cuisses de poulet','2 oignons','150 g olives vertes','1 citron confit','1 cc curcuma','1 cc gingembre','300 g semoule'],['Faire dorer le poulet avec les oignons et les épices.','Ajouter olives et citron, un fond d’eau, mijoter 40 min.','Servir avec la semoule.']],
+['Poulet riz au safran',4,35,'Volaille',['persan'],11,['4 cuisses de poulet','300 g riz basmati','1 oignon','1 pincée safran','1 pot yaourt','2 cs huile'],['Faire dorer le poulet avec l’oignon.','Cuire le riz avec le safran.','Servir avec le yaourt.']],
+['Zereshk polo ba morgh',6,90,'Volaille',['persan'],18,['6 cuisses de poulet','500 g riz basmati','100 g épine-vinette (zereshk)','2 oignons','1 pincée safran','60 g beurre','2 cs sucre'],['Cuire le poulet avec les oignons et le safran, 45 min.','Cuire le riz à l’iranienne (rincé, bouilli, puis à l’étouffée).','Faire revenir les zereshk au beurre avec le sucre, parsemer sur le riz.']],
+['Chili con carne',8,60,'Mijoté',['congélateur'],18,['1 kg bœuf haché','2 boîte haricots rouges','2 boîte tomates concassées','2 oignons','2 poivrons','2 gousse ail','1 cs cumin','1 cs paprika','600 g riz'],['Faire revenir oignons, ail et poivrons.','Ajouter la viande, puis tomates, haricots et épices.','Mijoter 40 min. Répartir en boîtes : la moitié au congélateur.']],
+['Hachis parmentier',6,60,'Viande',['congélateur','enfants','four'],14,['600 g bœuf haché','1.5 kg pommes de terre','2 oignons','20 cl lait','40 g beurre','100 g gruyère râpé'],['Préparer une purée.','Faire revenir la viande avec les oignons.','Viande dessous, purée dessus, gruyère, 25 min au four à 200°.']],
+['Bœuf bourguignon',6,180,'Mijoté',['congélateur'],24,['1.2 kg bœuf à mijoter','200 g lardons','3 carottes','2 oignons','75 cl vin rouge','250 g champignons','2 cs farine','1 bouquet garni'],['Faire dorer la viande et les lardons, saupoudrer de farine.','Ajouter légumes, vin, bouquet garni. Mijoter 2 h 30.','Ajouter les champignons 20 min avant la fin.']],
+['Blanquette de veau',6,120,'Mijoté',['congélateur'],26,['1.2 kg veau à blanquette','3 carottes','2 oignons','250 g champignons','20 cl crème fraîche','40 g beurre','40 g farine','1 citron','500 g riz'],['Pocher la viande avec carottes et oignons 1 h 30.','Lier le bouillon avec beurre, farine et crème, un trait de citron.','Servir avec le riz.']],
+['Boulettes de bœuf sauce tomate',4,40,'Viande',['congélateur','enfants'],12,['600 g bœuf haché','1 œuf','1 oignon','40 g chapelure','2 boîte tomates concassées','400 g pâtes','2 cs huile d’olive'],['Mélanger viande, œuf, oignon haché, chapelure. Former des boulettes.','Les dorer, puis mijoter 20 min dans la sauce tomate.','Servir avec les pâtes.']],
+['Steak haché et haricots verts',4,20,'Viande',['enfants'],12,['4 steaks hachés','600 g haricots verts','20 g beurre','1 gousse ail'],['Cuire les haricots verts 10 min.','Saisir les steaks.','Faire sauter les haricots au beurre et à l’ail.']],
+['Côtes de porc et pommes sautées',4,30,'Viande',[],12,['4 côtes de porc','1 kg pommes de terre','2 cs huile','1 gousse ail','1 branche persil'],['Faire sauter les pommes de terre en dés 20 min.','Saisir les côtes de porc.','Ail et persil sur les pommes de terre.']],
+['Sauté de porc au caramel',4,40,'Viande',['congélateur'],13,['800 g sauté de porc','3 cs sucre','4 cs sauce soja','1 oignon','1 cc gingembre','300 g riz'],['Faire dorer le porc avec l’oignon.','Ajouter sucre, soja, gingembre et un fond d’eau. Mijoter 25 min.','Servir avec le riz.']],
+['Rôti de porc aux carottes',6,90,'Viande',['four','congélateur'],16,['1.2 kg rôti de porc','1 kg carottes','2 oignons','2 gousse ail','1 branche thym','2 cs huile'],['Dorer le rôti de tous les côtés.','Entourer de carottes, oignons, ail, thym.','1 h 15 au four à 180°.']],
+['Tomates farcies',4,60,'Viande',['four','congélateur'],12,['8 tomates','500 g chair à saucisse','1 oignon','1 gousse ail','1 branche persil','300 g riz'],['Creuser les tomates.','Mélanger chair, oignon, ail, persil. Farcir.','45 min au four à 180°, riz cuit dans le jus.']],
+['Khoresh gheymeh',6,120,'Mijoté',['persan','congélateur'],20,['800 g bœuf à mijoter','200 g pois cassés jaunes','2 oignons','2 cs concentré de tomate','3 citrons séchés (limou amani)','1 cc curcuma','500 g riz basmati','3 pommes de terre'],['Faire revenir oignons et viande avec le curcuma.','Ajouter concentré, pois cassés, citrons séchés, eau. Mijoter 1 h 30.','Servir avec le riz et des frites fines de pommes de terre dessus.']],
+['Ghormeh sabzi',6,150,'Mijoté',['persan','congélateur'],20,['800 g bœuf à mijoter','2 bottes persil','1 botte coriandre','1 botte ciboulette','200 g haricots rouges','4 citrons séchés (limou amani)','2 oignons','1 cs fenugrec séché','500 g riz basmati'],['Faire revenir les herbes hachées longuement dans l’huile.','Ajouter viande dorée, oignons, haricots, citrons séchés, eau. Mijoter 2 h.','Servir avec le riz. Se congèle très bien.']],
+['Saumon au four et riz',4,30,'Poisson',['four'],16,['4 pavés de saumon','300 g riz','1 citron','2 cs huile d’olive','1 branche aneth','400 g brocoli'],['Saumon au four 15 min à 200° avec citron et huile.','Cuire le riz et le brocoli à la vapeur.','Aneth au moment de servir.']],
+['Cabillaud et purée maison',4,35,'Poisson',['enfants'],15,['4 dos de cabillaud','1 kg pommes de terre','20 cl lait','40 g beurre','1 citron'],['Préparer la purée.','Cuire le cabillaud à la poêle ou à la vapeur, 8 min.','Un trait de citron.']],
+['Poisson pané et épinards',4,20,'Poisson',['enfants'],10,['8 poissons panés','800 g épinards surgelés','20 cl crème fraîche','1 gousse ail'],['Cuire les poissons panés au four ou à la poêle.','Réchauffer les épinards avec l’ail et la crème.']],
+['Papillotes de poisson aux légumes',4,30,'Poisson',['four'],14,['4 filets de poisson blanc','2 courgettes','2 carottes','1 citron','2 cs huile d’olive','300 g riz'],['Légumes en fines lamelles, poisson dessus, citron, huile.','Fermer les papillotes, 20 min au four à 200°.','Servir avec le riz.']],
+['Gratin dauphinois',4,70,'Végétarien',['végétarien','four'],6,['1.2 kg pommes de terre','50 cl crème fraîche','25 cl lait','2 gousse ail','1 pincée muscade'],['Pommes de terre en fines rondelles.','Couches avec ail, crème et lait, muscade.','1 h au four à 170°.']],
+['Ratatouille',6,60,'Végétarien',['végétarien','congélateur'],9,['2 aubergines','3 courgettes','2 poivrons','4 tomates','2 oignons','3 gousse ail','4 cs huile d’olive','1 branche thym'],['Faire revenir chaque légume séparément.','Réunir avec ail et thym, mijoter 30 min.','Se congèle. Servir avec riz, œufs ou semoule.']],
+['Curry de lentilles (dahl)',6,40,'Végétarien',['végétarien','congélateur'],6,['400 g lentilles corail','1 oignon','2 gousse ail','1 boîte tomates concassées','20 cl lait de coco','2 cs curry','1 cc cumin','400 g riz'],['Faire revenir oignon, ail, épices.','Ajouter lentilles, tomates, lait de coco, eau. Cuire 25 min.','Servir avec le riz.']],
+['Wok de légumes et nouilles',4,25,'Végétarien',['végétarien'],8,['300 g nouilles chinoises','2 carottes','1 poivron','1 brocoli','3 cs sauce soja','1 cc gingembre','2 cs huile'],['Légumes en bâtonnets, sautés à feu vif 8 min.','Ajouter nouilles cuites, soja, gingembre.']],
+['Galettes de pommes de terre',4,30,'Végétarien',['végétarien','enfants'],5,['1 kg pommes de terre','1 oignon','2 œuf','2 cs farine','3 cs huile','1 salade verte'],['Râper pommes de terre et oignon, presser.','Mélanger avec œufs et farine, former des galettes.','Dorer à la poêle. Servir avec la salade.']],
+['Gratin de courgettes',4,45,'Végétarien',['végétarien','four'],7,['1 kg courgettes','3 œuf','20 cl crème fraîche','100 g gruyère râpé','1 gousse ail'],['Faire revenir les courgettes en rondelles.','Mélanger œufs, crème, gruyère, ail. Verser dessus.','30 min au four à 180°.']],
+['Chou-fleur gratiné',4,45,'Végétarien',['végétarien','four'],7,['1 chou-fleur','50 cl lait','40 g beurre','40 g farine','100 g gruyère râpé','1 pincée muscade'],['Cuire le chou-fleur 12 min.','Béchamel, muscade.','Napper, gruyère, 20 min au four à 200°.']],
+['Adas polo',6,60,'Pâtes et riz',['persan','végétarien','congélateur'],8,['500 g riz basmati','250 g lentilles vertes','2 oignons','100 g raisins secs','100 g dattes','1 cc cumin','1 pincée safran','60 g beurre'],['Cuire les lentilles 20 min.','Cuire le riz à l’iranienne, en couches avec les lentilles.','Faire revenir oignons, raisins et dattes au beurre, parsemer.']],
+['Quiche lorraine',4,45,'Œufs et tartes',['four','congélateur'],7,['1 pâte brisée','200 g lardons','3 œuf','20 cl crème fraîche','20 cl lait','100 g gruyère râpé'],['Foncer la pâte, répartir les lardons dorés.','Battre œufs, crème, lait, verser, gruyère.','35 min au four à 180°.']],
+['Omelette aux champignons',4,15,'Œufs et tartes',['végétarien'],5,['8 œuf','300 g champignons','1 branche persil','20 g beurre','1 salade verte'],['Faire sauter les champignons.','Verser les œufs battus, cuire 5 min.','Servir avec la salade.']],
+['Kuku sabzi',4,40,'Œufs et tartes',['persan','végétarien'],7,['6 œuf','2 bottes persil','1 botte coriandre','1 botte ciboulette','50 g noix','2 cs farine','1 cc curcuma','3 cs huile'],['Hacher finement les herbes.','Mélanger avec œufs, farine, curcuma, noix.','Cuire à la poêle couverte 15 min de chaque côté, ou au four.']],
+['Crêpes salées jambon fromage',4,30,'Œufs et tartes',['enfants'],7,['250 g farine','3 œuf','50 cl lait','200 g jambon','150 g gruyère râpé','20 g beurre'],['Préparer la pâte à crêpes, laisser reposer.','Cuire les crêpes.','Garnir jambon et fromage, replier, réchauffer.']],
+['Pizza maison',4,40,'Œufs et tartes',['enfants','four'],8,['2 pâtes à pizza','1 boîte tomates concassées','2 boules mozzarella','200 g jambon','150 g champignons','1 branche origan'],['Étaler la sauce tomate sur les pâtes.','Garnir mozzarella, jambon, champignons, origan.','12 min au four à 240°.']],
+['Croque-monsieur et salade',4,15,'Œufs et tartes',['enfants'],7,['16 tranches pain de mie','8 tranches jambon','8 tranches emmental','40 g beurre','1 salade verte'],['Monter les croques, beurrer l’extérieur.','Dorer à la poêle ou au four.','Servir avec la salade.']],
+['Soupe de légumes',6,40,'Soupe',['végétarien','congélateur'],6,['4 carottes','3 pommes de terre','2 poireaux','1 oignon','1 navet','1 cube bouillon'],['Légumes en morceaux, couvrir d’eau avec le bouillon.','Cuire 30 min, mixer.','Se congèle en portions.']],
+['Velouté de potiron',6,40,'Soupe',['végétarien','congélateur'],6,['1.5 kg potiron','1 oignon','20 cl crème fraîche','1 cube bouillon','1 pincée muscade'],['Faire revenir l’oignon, ajouter le potiron en cubes.','Couvrir de bouillon, cuire 25 min, mixer.','Crème et muscade.']],
+['Soupe de lentilles corail',4,30,'Soupe',['végétarien','congélateur'],5,['300 g lentilles corail','1 oignon','2 carottes','1 cc cumin','1 boîte tomates concassées','1 cube bouillon'],['Faire revenir oignon, carottes, cumin.','Ajouter lentilles, tomates, bouillon. Cuire 20 min.','Mixer grossièrement.']],
+['Couscous poulet merguez',6,60,'Mijoté',['congélateur'],20,['6 cuisses de poulet','6 merguez','500 g semoule','2 carottes','2 navets','2 courgettes','1 boîte pois chiches','1 boîte tomates concassées','2 cs ras el hanout'],['Faire dorer le poulet, ajouter légumes, tomates, épices, eau. Mijoter 40 min.','Griller les merguez.','Servir avec la semoule et les pois chiches.']],
+['Salade César au poulet',4,25,'Salade',[],12,['2 blancs de poulet','2 salades romaine','60 g parmesan','100 g croûtons','4 cs sauce césar'],['Griller le poulet en lamelles.','Assembler salade, poulet, croûtons, parmesan.','Sauce au moment de servir.']],
+['Salade de pâtes',4,20,'Salade',['végétarien'],6,['400 g pâtes','2 tomates','1 concombre','150 g feta','100 g olives noires','3 cs huile d’olive'],['Cuire les pâtes, refroidir.','Mélanger avec légumes en dés, feta, olives.','Assaisonner.']],
+['Taboulé',6,20,'Salade',['végétarien'],6,['400 g semoule fine','4 tomates','1 concombre','1 botte menthe','1 botte persil','2 citrons','4 cs huile d’olive'],['Gonfler la semoule avec le jus de citron et l’huile.','Ajouter légumes en dés et herbes hachées.','Laisser reposer 1 h au frais.']],
+['Salade niçoise',4,20,'Salade',[],11,['2 boîte thon','4 œuf','4 tomates','200 g haricots verts','100 g olives noires','1 salade verte','3 cs huile d’olive'],['Œufs durs, haricots verts cuits.','Assembler avec thon, tomates, olives, salade.','Assaisonner.']],
+];
+function catalogRecipe(c){
+  return {id:'c'+c[0].toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+$/,''),catalog:true,name:c[0],persons:c[1],minutes:c[2],cat:c[3],tags:c[4].slice(),cost:c[5],
+    ingredients:c[6].map(parseIng).filter(Boolean),steps:c[7].slice()};
+}
 function seed(){
-  return {
-    settings:{persons:4},
-    recipes:[
-      {id:'r1',sample:true,name:'Pâtes au pesto',persons:4,minutes:20,
-       ingredients:[{qty:400,unit:'g',name:'pâtes'},{qty:1,unit:'pot',name:'pesto'},{qty:50,unit:'g',name:'parmesan'},{qty:1,unit:'',name:'poignée de pignons'}],
-       steps:['Cuire les pâtes al dente.','Mélanger avec le pesto hors du feu.','Servir avec le parmesan et les pignons.']},
-      {id:'r2',sample:true,name:'Poulet riz au safran',persons:4,minutes:35,
-       ingredients:[{qty:4,unit:'',name:'cuisses de poulet'},{qty:300,unit:'g',name:'riz basmati'},{qty:1,unit:'',name:'oignon'},{qty:1,unit:'pincée',name:'safran'},{qty:1,unit:'pot',name:'yaourt'},{qty:2,unit:'cs',name:'huile'}],
-       steps:['Faire dorer le poulet avec l’oignon.','Cuire le riz avec le safran.','Servir avec le yaourt.']},
-      {id:'r3',sample:true,name:'Chili con carne (à congeler)',persons:8,minutes:60,
-       ingredients:[{qty:1,unit:'kg',name:'bœuf haché'},{qty:2,unit:'boîte',name:'haricots rouges'},{qty:2,unit:'boîte',name:'tomates concassées'},{qty:2,unit:'',name:'oignons'},{qty:2,unit:'',name:'poivrons'},{qty:2,unit:'gousse',name:'ail'},{qty:1,unit:'cs',name:'cumin'},{qty:1,unit:'cs',name:'paprika'},{qty:600,unit:'g',name:'riz basmati'}],
-       steps:['Faire revenir oignons, ail et poivrons.','Ajouter la viande, puis tomates, haricots et épices.','Mijoter 40 min. Répartir en boîtes : la moitié au congélateur.']}
-    ],
-    weeks:{}, lists:{}, prices:[]
-  };
+  return {settings:{persons:4,catalogVersion:CATALOG_VERSION},recipes:CATALOG.map(catalogRecipe),weeks:{},lists:{},prices:[]};
+}
+function importCatalog(s){
+  /* les 3 exemples de la toute première version sont remplacés par leur équivalent du catalogue */
+  const remap={};
+  s.recipes=s.recipes.filter(r=>{
+    if(!r.sample)return true;
+    const base=norm(r.name).replace(/\s*\(.*\)\s*$/,'');
+    const c=CATALOG.find(x=>norm(x[0])===base);
+    if(c)remap[r.id]=catalogRecipe(c).id;
+    return false;
+  });
+  Object.values(s.weeks||{}).forEach(w=>Object.values(w.slots||{}).forEach(sl=>{if(sl&&remap[sl.recipeId])sl.recipeId=remap[sl.recipeId]}));
+  const have=new Set(s.recipes.map(r=>matchKey(r.name)));
+  CATALOG.forEach(c=>{if(!have.has(matchKey(c[0])))s.recipes.push(catalogRecipe(c))});
+  s.recipes.forEach(r=>{if(!r.tags)r.tags=[]});
+  s.settings.catalogVersion=CATALOG_VERSION;
 }
 let S=load();
-function load(){let s=null;try{const raw=localStorage.getItem(KEY);if(raw){const p=JSON.parse(raw);if(p&&p.recipes)s=p}}catch(e){}if(!s)s=seed();if(!s.extras)s.extras=[];if(!s.prices)s.prices=[];if(!s.lists)s.lists={};if(!s.weeks)s.weeks={};if(!s.receipts)s.receipts=[];return s}
+function load(){let s=null;try{const raw=localStorage.getItem(KEY);if(raw){const p=JSON.parse(raw);if(p&&p.recipes)s=p}}catch(e){}if(!s)s=seed();if(!s.extras)s.extras=[];if(!s.prices)s.prices=[];if(!s.lists)s.lists={};if(!s.weeks)s.weeks={};if(!s.receipts)s.receipts=[];if(!s.settings)s.settings={persons:4};if((s.settings.catalogVersion||0)<CATALOG_VERSION)importCatalog(s);return s}
+function autoTags(r){
+  const t=new Set(r.tags||[]);
+  if(r.minutes&&r.minutes<=25)t.add('rapide');
+  const pp=perPerson(r);if(pp!=null&&pp<=2)t.add('pas cher');
+  return Array.from(t);
+}
+function perPerson(r){
+  const c=recipeCost(r);
+  if(c&&c.n===c.of)return c.total/r.persons;
+  if(typeof r.cost==='number')return r.cost/r.persons;
+  return null;
+}
+function costLabel(r,persons){
+  const p=persons||r.persons;const c=recipeCost(r,p);
+  if(c&&c.n===c.of)return {text:'≈ '+eur(c.total),title:'Calculé avec tes prix ('+c.store+')',exact:true};
+  if(typeof r.cost==='number')return {text:'≈ '+eur(r.cost*p/r.persons),title:'Coût indicatif, prix moyens en supermarché. Saisis tes prix pour affiner.',exact:false};
+  if(c)return {text:'≈ '+eur(c.total)+' · partiel',title:c.n+' ingrédients sur '+c.of+' avec un prix connu',exact:false};
+  return null;
+}
 function rememberExtra(p){
   const k=matchKey(p.name);let x=S.extras.find(e=>matchKey(e.name)===k);
   if(x){x.count++;x.last=today();x.qty=p.qty;x.unit=p.unit}else S.extras.push({name:p.name,qty:p.qty,unit:p.unit,count:1,last:today()});
@@ -286,7 +372,9 @@ function renderWeek(){
     <div style="text-align:center"><h2>${esc(weekLabel(weekMon))}</h2><p class="sub">${planned} repas prévu${planned>1?'s':''}${isCur?' · cette semaine':''}</p></div>
     <button class="btn icon" data-act="week-next" aria-label="Semaine suivante">›</button></div>`;
   if(!isCur)h+=`<div style="text-align:center;margin-top:6px"><button class="btn ghost small" data-act="week-today">Revenir à cette semaine</button></div>`;
-  h+='<div style="margin-top:14px">';
+  const wc=weekCost(w);
+  h+=`<div class="row" style="margin-top:12px;gap:8px"><button class="btn grow" data-act="suggest">✨ Proposer une semaine</button>${wc.total>0?`<div class="tile" style="padding:6px 12px;text-align:right"><div class="n" style="font-size:17px">${eur(wc.total)}</div><div class="l">${wc.exact?'avec tes prix':'indicatif'}</div></div>`:''}</div>`;
+  h+='<div style="margin-top:12px">';
   DAYS.forEach((dn,i)=>{
     const d=addDays(weekMon,i);
     h+=`<div class="card"><div class="day"><b>${dn}</b><span>${esc(fmtDay.format(d))}</span></div>`;
@@ -301,6 +389,67 @@ function renderWeek(){
   h+=`<button class="btn primary block" data-act="generate">Générer la liste de courses</button>`;
   h+=`<p class="note">Astuce congélation : pour cuisiner en avance, mets plus de personnes sur le repas (8 au lieu de 4) et coche « une partie au congélateur ». La liste de courses suit.</p>`;
   return h;
+}
+function slotCost(s){
+  const r=s&&s.recipeId?recipeById(s.recipeId):null;if(!r)return null;
+  const p=s.persons||r.persons;const c=recipeCost(r,p);
+  if(c&&c.n===c.of)return {v:c.total,exact:true};
+  if(typeof r.cost==='number')return {v:r.cost*p/r.persons,exact:false};
+  return null;
+}
+function weekCost(w){
+  let total=0,exact=true,n=0;
+  Object.values(w.slots).forEach(s=>{const c=slotCost(s);if(c){total+=c.v;n++;if(!c.exact)exact=false}});
+  return {total,exact:exact&&n>0,n};
+}
+function openSuggest(){
+  const w=week();const empty=Object.keys(w.slots).length===0;
+  sheet(`<h2>Proposer une semaine</h2><p class="sub">L’app choisit des plats variés dans le carnet. Tu pourras changer chaque repas ensuite.</p>
+    <label for="s-meals">Quels repas</label><select id="s-meals"><option value="dinner">Les dîners seulement</option><option value="both">Déjeuners et dîners</option><option value="lunch">Les déjeuners seulement</option></select>
+    <label for="s-persons">Nombre de personnes</label><input type="number" id="s-persons" min="1" max="30" value="${S.settings.persons}">
+    <label for="s-budget">Budget pour ces repas (€, facultatif)</label><input type="number" id="s-budget" min="0" step="5" inputmode="decimal" placeholder="ex. 80">
+    <label class="row" style="margin-top:14px;cursor:pointer;color:inherit;font-size:inherit"><input type="checkbox" id="s-keep" style="width:auto" checked${empty?' disabled':''}> <span>Garder les repas déjà prévus</span></label>
+    <label class="row" style="margin-top:10px;cursor:pointer;color:inherit;font-size:inherit"><input type="checkbox" id="s-freeze" style="width:auto"> <span>Privilégier les plats à congeler (portions doublées, une partie au congélateur)</span></label>
+    <label class="row" style="margin-top:10px;cursor:pointer;color:inherit;font-size:inherit"><input type="checkbox" id="s-veg" style="width:auto" checked> <span>Au moins un repas végétarien</span></label>
+    <div class="actions"><button class="btn" data-act="close">Annuler</button><button class="btn primary" data-act="suggest-go">Proposer</button></div>`);
+}
+function suggestWeek(){
+  const w=week();const meals=document.getElementById('s-meals').value;
+  const persons=Math.max(1,parseInt(document.getElementById('s-persons').value,10)||S.settings.persons);
+  const budget=parseFloat(String(document.getElementById('s-budget').value).replace(',','.'))||0;
+  const keep=document.getElementById('s-keep').checked;const preferFreeze=document.getElementById('s-freeze').checked;const wantVeg=document.getElementById('s-veg').checked;
+  const keys=[];DAYS.forEach((d,i)=>{if(meals!=='dinner')keys.push(i+'-lunch');if(meals!=='lunch')keys.push(i+'-dinner')});
+  const targets=keys.filter(k=>!keep||!w.slots[k]||!(w.slots[k].recipeId||w.slots[k].label));
+  if(!targets.length){toast('Tous ces repas sont déjà prévus');return}
+  const used=new Set(Object.values(w.slots).filter(s=>s&&s.recipeId).map(s=>s.recipeId));
+  let pool=S.recipes.filter(r=>!used.has(r.id)&&r.ingredients.length);
+  if(pool.length<targets.length)pool=S.recipes.filter(r=>r.ingredients.length);
+  const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+  pool=shuffle(pool.slice());
+  const pp=r=>{const v=perPerson(r);return v==null?3.5:v};
+  let remaining=budget>0?budget:0;let lastCat=null;const chosen=[];let vegDone=!wantVeg;
+  targets.forEach((k,idx)=>{
+    const left=targets.length-idx;
+    const mult=r=>(preferFreeze&&autoTags(r).includes('congélateur'))?2:1;
+    let cands=pool.filter(r=>!chosen.includes(r));
+    if(!cands.length)cands=pool.slice();
+    let ranked=cands.filter(r=>r.cat!==lastCat);if(!ranked.length)ranked=cands;
+    if(!vegDone){const v=ranked.filter(r=>autoTags(r).includes('végétarien'));if(v.length&&(left<=2||Math.random()<0.4))ranked=v}
+    if(preferFreeze){const f=ranked.filter(r=>autoTags(r).includes('congélateur'));if(f.length&&Math.random()<0.6)ranked=f}
+    if(budget>0){
+      const cap=remaining/left*1.25;
+      const ok=ranked.filter(r=>pp(r)*persons*mult(r)<=cap);
+      if(ok.length)ranked=ok;else ranked=ranked.slice().sort((a,b)=>pp(a)-pp(b)).slice(0,3);
+    }
+    const r=ranked[Math.floor(Math.random()*ranked.length)];if(!r)return;
+    const m=mult(r);const cost=pp(r)*persons*m;
+    w.slots[k]={recipeId:r.id,label:'',persons:persons*m,freeze:m>1};
+    chosen.push(r);lastCat=r.cat||null;if(autoTags(r).includes('végétarien'))vegDone=true;
+    if(budget>0)remaining=Math.max(0,remaining-cost);
+  });
+  S.settings.persons=persons;save();closeSheet();render();
+  const wc=weekCost(w);
+  toast(targets.length+' repas proposés'+(wc.total>0?' · ≈ '+eur(wc.total)+(budget>0?' pour '+eur(budget)+' demandés':''):''));
 }
 function openSlot(key){
   const w=week();const s=w.slots[key]||{recipeId:'',label:'',persons:S.settings.persons,freeze:false};
@@ -328,29 +477,48 @@ function saveSlot(key){
 }
 
 /* ---------- recipes ---------- */
+let recipeQuery='',recipeFilter='tous';
+const FILTERS=[['tous','Tous'],['rapide','Rapide'],['congélateur','À congeler'],['végétarien','Végétarien'],['pas cher','Pas cher'],['enfants','Enfants'],['four','Au four'],['persan','Persan'],['mien','Mes recettes']];
+function filterRecipes(){
+  const q=norm(recipeQuery);
+  return S.recipes.filter(r=>{
+    if(q&&!norm(r.name).includes(q)&&!r.ingredients.some(i=>norm(i.name).includes(q)))return false;
+    if(recipeFilter==='tous')return true;
+    if(recipeFilter==='mien')return !r.catalog;
+    return autoTags(r).includes(recipeFilter);
+  }).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+}
+function tagPills(r){return autoTags(r).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}
 function renderRecipes(){
-  let h=`<div class="row between" style="margin-top:6px"><div><h2>Carnet de recettes</h2><p class="sub">${S.recipes.length} recette${S.recipes.length>1?'s':''}</p></div><button class="btn primary" data-act="recipe-new">+ Nouvelle</button></div>`;
-  if(!S.recipes.length)return h+`<div class="card" style="margin-top:14px"><div class="empty"><b>Aucune recette pour l’instant</b>Ajoute vos plats habituels avec leurs ingrédients.</div></div>`;
-  h+='<div class="card" style="margin-top:14px">';
-  S.recipes.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr')).forEach((r,idx)=>{
-    const c=recipeCost(r);
-    h+=`<button class="rec" data-act="recipe-open" data-id="${r.id}" style="${idx?'border-top:1px solid var(--line)':''}"><div class="grow"><div class="t">${esc(r.name)}${r.sample?'<span class="tag">exemple</span>':''}</div><div class="m">${r.persons} pers. · ${r.minutes?r.minutes+' min · ':''}${r.ingredients.length} ingrédients</div></div>${c?`<div class="cost" title="Estimation chez ${esc(c.store)}, ${c.n} ingrédient${c.n>1?'s':''} sur ${c.of} avec un prix connu">≈ ${eur(c.total)}</div>`:''}</button>`;
+  const list=filterRecipes();
+  let h=`<div class="row between" style="margin-top:6px"><div><h2>Carnet de recettes</h2><p class="sub">${S.recipes.length} recette${S.recipes.length>1?'s':''}</p></div><button class="btn primary" data-act="recipe-new">+ Nouvelle</button></div>
+  <input type="text" id="recipe-q" value="${esc(recipeQuery)}" placeholder="Chercher un plat ou un ingrédient" style="margin-top:12px" autocomplete="off">
+  <div class="chips" style="margin-top:10px">${FILTERS.map(([k,l])=>`<button class="chip${recipeFilter===k?' on':''}" data-act="recipe-filter" data-f="${k}">${l}</button>`).join('')}</div>`;
+  if(!list.length)return h+`<div class="card" style="margin-top:14px"><div class="empty"><b>Aucune recette ne correspond</b>Change de filtre ou ajoute la tienne avec « + Nouvelle ».</div></div>`;
+  h+=`<p class="sub" style="margin:12px 0 6px">${list.length} plat${list.length>1?'s':''}</p><div class="card">`;
+  list.forEach((r,idx)=>{
+    const c=costLabel(r);
+    h+=`<button class="rec" data-act="recipe-open" data-id="${r.id}" style="${idx?'border-top:1px solid var(--line)':''}"><div class="grow"><div class="t">${esc(r.name)}</div><div class="m">${r.persons} pers. · ${r.minutes?r.minutes+' min · ':''}${esc(r.cat||'')}</div><div style="margin-top:3px">${tagPills(r)}</div></div>${c?`<div class="cost${c.exact?'':' approx'}" title="${esc(c.title)}">${c.text}</div>`:''}</button>`;
   });
   return h+'</div>';
 }
 function openRecipe(id){
   const r=recipeById(id);if(!r)return;
-  const c=recipeCost(r);
-  sheet(`<h2>${esc(r.name)}</h2><p class="sub">${r.persons} personnes${r.minutes?' · '+r.minutes+' min':''}${c?' · ≈ '+eur(c.total)+' chez '+esc(c.store)+' ('+c.n+'/'+c.of+' prix connus)':''}</p>
+  const c=costLabel(r);
+  sheet(`<h2>${esc(r.name)}</h2><p class="sub">${r.persons} personnes${r.minutes?' · '+r.minutes+' min':''}${r.cat?' · '+esc(r.cat):''}${c?' · '+c.text+(c.exact?'':' (indicatif)'):''}</p><div style="margin-top:6px">${tagPills(r)}</div>
     <h3>Ingrédients</h3><div>${r.ingredients.map(i=>`<div class="ing"><span>${esc(i.name)}</span><span>${esc(fmtIng(i))}</span></div>`).join('')}</div>
     ${r.steps.length?`<h3>Étapes</h3><ol class="steps">${r.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>`:''}
     <div class="actions"><button class="btn" data-act="close">Fermer</button><button class="btn danger" data-act="recipe-delete" data-id="${r.id}">Supprimer</button><button class="btn primary" data-act="recipe-edit" data-id="${r.id}">Modifier</button></div>`);
 }
 function editRecipe(id){
-  const r=id?recipeById(id):{id:'',name:'',persons:S.settings.persons,minutes:'',ingredients:[],steps:[]};
+  const r=id?recipeById(id):{id:'',name:'',persons:S.settings.persons,minutes:'',ingredients:[],steps:[],cat:'',tags:[],cost:''};
+  const tags=r.tags||[];
   sheet(`<h2>${id?'Modifier la recette':'Nouvelle recette'}</h2>
     <label for="r-name">Nom du plat</label><input type="text" id="r-name" value="${esc(r.name)}" placeholder="Gratin de courgettes">
-    <div class="grid2"><div><label for="r-persons">Pour combien</label><input type="number" id="r-persons" min="1" value="${r.persons}"></div><div><label for="r-minutes">Temps (min)</label><input type="number" id="r-minutes" min="0" value="${esc(r.minutes||'')}"></div></div>
+    <div class="grid3"><div><label for="r-persons">Pour combien</label><input type="number" id="r-persons" min="1" value="${r.persons}"></div><div><label for="r-minutes">Temps (min)</label><input type="number" id="r-minutes" min="0" value="${esc(r.minutes||'')}"></div><div><label for="r-cost">Coût indicatif €</label><input type="number" id="r-cost" min="0" step="0.5" inputmode="decimal" value="${esc(r.cost===undefined||r.cost===null?'':r.cost)}" placeholder="12"></div></div>
+    <label for="r-cat">Catégorie</label><select id="r-cat"><option value="">—</option>${CATS_R.map(c=>`<option${r.cat===c?' selected':''}>${c}</option>`).join('')}</select>
+    <label>Étiquettes</label><div class="chips">${['congélateur','végétarien','enfants','four','persan'].map(t=>`<label class="chip" style="display:inline-flex;align-items:center;gap:6px;margin:0;color:inherit;font-size:14px"><input type="checkbox" class="r-tag" value="${t}" style="width:auto"${tags.includes(t)?' checked':''}>${t}</label>`).join('')}</div>
+    <p class="note">« Rapide » et « pas cher » se déduisent tout seuls du temps et du coût.</p>
     <label for="r-ings">Ingrédients, un par ligne (quantité, unité, nom)</label>
     <textarea id="r-ings" placeholder="300 g riz basmati&#10;4 cuisses de poulet&#10;1 oignon&#10;1 pincée safran">${esc(r.ingredients.map(ingLine).join('\n'))}</textarea>
     <p class="note">Unités reconnues : g, kg, ml, cl, l, cs, cc, pincée, botte, boîte, pot, sachet, tranche, gousse, paquet, bouteille.</p>
@@ -365,8 +533,10 @@ function saveRecipe(id){
   const minutes=parseInt(document.getElementById('r-minutes').value,10)||0;
   const ingredients=document.getElementById('r-ings').value.split('\n').map(parseIng).filter(Boolean);
   const steps=document.getElementById('r-steps').value.split('\n').map(s=>s.trim()).filter(Boolean);
-  if(id){const r=recipeById(id);Object.assign(r,{name,persons,minutes,ingredients,steps});delete r.sample}
-  else S.recipes.push({id:uid(),name,persons,minutes,ingredients,steps});
+  const cat=document.getElementById('r-cat').value;const tags=Array.from(document.querySelectorAll('.r-tag:checked')).map(c=>c.value);
+  const costV=parseFloat(String(document.getElementById('r-cost').value).replace(',','.'));const cost=costV>0?costV:null;
+  if(id){const r=recipeById(id);Object.assign(r,{name,persons,minutes,ingredients,steps,cat,tags,cost});delete r.sample}
+  else S.recipes.push({id:uid(),name,persons,minutes,ingredients,steps,cat,tags,cost});
   save();closeSheet();render();toast('Recette enregistrée');
 }
 function deleteRecipe(id){
@@ -622,6 +792,9 @@ document.addEventListener('click',e=>{
     case 'generate':generateList();break;
     case 'close':closeSheet();break;
     case 'recipe-new':editRecipe('');break;
+    case 'recipe-filter':recipeFilter=el.dataset.f;render();break;
+    case 'suggest':openSuggest();break;
+    case 'suggest-go':suggestWeek();break;
     case 'recipe-open':openRecipe(el.dataset.id);break;
     case 'recipe-edit':editRecipe(el.dataset.id);break;
     case 'recipe-save':saveRecipe(el.dataset.id);break;
@@ -642,6 +815,7 @@ document.addEventListener('click',e=>{
   }
 });
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='manual-name'){e.preventDefault();document.querySelector('[data-act="manual-add"]').click()}});
+let qT;document.addEventListener('input',e=>{if(e.target&&e.target.id==='recipe-q'){recipeQuery=e.target.value;clearTimeout(qT);qT=setTimeout(()=>{const pos=e.target.selectionStart;render();const q=document.getElementById('recipe-q');if(q){q.focus();try{q.setSelectionRange(pos,pos)}catch(x){}}},250)}});
 
 render();
 })();
