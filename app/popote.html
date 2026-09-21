@@ -357,7 +357,13 @@ function norm(s){return String(s||'').toLowerCase().trim().replace(/\s+/g,' ')}
 function matchKey(s){let n=norm(s).replace(/^(des|les|du|de la|de l'|de|d'|le|la|l')\s+/,'');if(n.length>3&&n.endsWith('s')&&!n.endsWith('ss'))n=n.slice(0,-1);return n}
 function fam(u){if(u==='g'||u==='kg')return 'g';if(u==='ml'||u==='cl'||u==='l')return 'ml';return u||'pièce'}
 function toBase(q,u){if(u==='kg')return q*1000;if(u==='l')return q*1000;if(u==='cl')return q*10;return q}
+/* Arrondis de cuisine : 333,33 g devient 330 g, 0,67 pincée devient 1 pincée, 1,33 oignon devient 1,5 */
+function cookRound(q,f){
+  if(f==='g'||f==='ml'){if(q<20)return Math.max(1,Math.round(q));if(q<100)return Math.round(q/5)*5;if(q<1000)return Math.round(q/10)*10;return Math.round(q/50)*50}
+  return Math.max(0.5,Math.round(q*2)/2);
+}
 function fmtQty(q,f){
+  q=cookRound(q,f);
   if(f==='g'){return q>=1000?trim(q/1000)+' kg':trim(q)+' g'}
   if(f==='ml'){return q>=1000?trim(q/1000)+' l':trim(q)+' ml'}
   if(f==='pièce')return trim(q);
@@ -379,7 +385,12 @@ function parseIng(line){
   return {qty,unit,name:rest};
 }
 function ingLine(i){return (i.qty!==1||i.unit?trim(i.qty)+' ':'')+(i.unit?i.unit+' ':'')+i.name}
-function fmtIng(i){return i.unit?trim(i.qty)+' '+i.unit:(i.qty!==1?trim(i.qty):'')}
+function fmtIng(i){
+  const f=fam(i.unit);
+  if(f==='g'||f==='ml')return fmtQty(toBase(i.qty,i.unit),f);
+  const q=cookRound(i.qty,f);
+  return i.unit?trim(q)+' '+i.unit:(q!==1?trim(q):'');
+}
 function recipeById(id){return S.recipes.find(r=>r.id===id)}
 
 /* dates */
