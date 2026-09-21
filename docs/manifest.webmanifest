@@ -1,0 +1,15 @@
+{
+  "name": "Popote Maison",
+  "short_name": "Popote",
+  "description": "Menu de la semaine, liste de courses et carnet de prix pour la maison.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F2F4F0",
+  "theme_color": "#2F6B4F",
+  "lang": "fr",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
