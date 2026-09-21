@@ -139,8 +139,8 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 
 <nav class="tabs" aria-label="Sections">
   <button class="tab on" data-tab="week" id="tab-week"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Semaine</button>
-  <button class="tab" data-tab="recipes" id="tab-recipes"><svg viewBox="0 0 24 24"><path d="M4 4h12a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z"/><path d="M4 17a3 3 0 0 1 3-3h12M8 8h7"/></svg>Recettes</button>
   <button class="tab" data-tab="list" id="tab-list"><svg viewBox="0 0 24 24"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg>Courses</button>
+  <button class="tab" data-tab="recipes" id="tab-recipes"><svg viewBox="0 0 24 24"><path d="M4 4h12a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z"/><path d="M4 17a3 3 0 0 1 3-3h12M8 8h7"/></svg>Recettes</button>
   <button class="tab" data-tab="prices" id="tab-prices"><svg viewBox="0 0 24 24"><path d="M4 18l5-6 4 3 7-8"/><path d="M15 7h5v5"/></svg>Prix</button>
   <button class="tab" data-tab="stock" id="tab-stock"><svg viewBox="0 0 24 24"><path d="M4 8l8-4 8 4v9l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v9"/></svg>Stock</button>
 </nav>
@@ -178,7 +178,7 @@ function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth
 /* Catalogue de départ : [nom, personnes, minutes, catégorie, étiquettes, coût indicatif € (pour le nombre de personnes), ingrédients, étapes] */
 const CATS_R=['Viande','Volaille','Poisson','Végétarien','Pâtes et riz','Soupe','Salade','Œufs et tartes','Mijoté'];
 const TAGS=['rapide','congélateur','végétarien','pas cher','enfants','four','persan'];
-const CATALOG_VERSION=3;
+const CATALOG_VERSION=4;
 /* version 3 : plus de porc dans le catalogue. Anciens noms remplacés, plats de porc retirés. */
 const RENAMED={'Riz cantonais':'Riz cantonais au poulet','Gratin de pâtes au jambon':'Gratin de pâtes au poulet','Côtes de porc et pommes sautées':'Escalopes de poulet et pommes sautées','Sauté de porc au caramel':'Sauté de poulet au caramel','Rôti de porc aux carottes':'Rôti de dinde aux carottes','Quiche lorraine':'Quiche aux poireaux','Crêpes salées jambon fromage':'Crêpes salées dinde fromage','Croque-monsieur et salade':'Croque-monsieur à la dinde et salade'};
 const CATALOG=[
@@ -256,10 +256,370 @@ const META={
 'Soupe de légumes':['Française','Végétarien','hiver'],'Velouté de potiron':['Française','Végétarien','hiver'],'Soupe de lentilles corail':['Orientale','Végétarien','hiver'],
 'Couscous poulet merguez':['Maghreb','Volaille',''],'Salade César au poulet':['Américaine','Volaille','été'],'Salade de pâtes':['Italienne','Végétarien','été'],
 'Taboulé':['Orientale','Végétarien','été'],'Salade niçoise':['Française','Poisson','été']};
+/* Déroulés détaillés des recettes du catalogue, par nom de plat */
+const STEPS={
+'Pâtes au pesto':[
+'Porter à ébullition une grande casserole d’eau, environ 1 litre pour 100 g de pâtes, et saler généreusement (10 g de sel par litre) une fois que l’eau bout.',
+'Pendant ce temps, faire griller les pignons 2 à 3 minutes à sec dans une poêle, en remuant : ils doivent juste dorer. Réserver.',
+'Plonger les pâtes et cuire le temps indiqué sur le paquet moins 1 minute, en remuant au début pour qu’elles ne collent pas.',
+'Prélever une louche d’eau de cuisson avant d’égoutter. Égoutter les pâtes sans les rincer.',
+'Remettre les pâtes dans la casserole hors du feu, ajouter le pesto et 2 à 3 cuillères d’eau de cuisson. Mélanger : la sauce doit napper les pâtes sans être sèche.',
+'Servir aussitôt avec le parmesan râpé et les pignons grillés. Poivrer au goût.'],
+'Pâtes au thon et tomates':[
+'Émincer finement l’oignon et hacher l’ail. Égoutter le thon.',
+'Chauffer l’huile d’olive dans une sauteuse à feu moyen. Faire fondre l’oignon 5 minutes sans le colorer, puis ajouter l’ail 1 minute.',
+'Verser les tomates concassées, saler, poivrer. Laisser mijoter 10 à 12 minutes à feu doux, jusqu’à ce que la sauce épaississe un peu.',
+'Pendant ce temps, cuire les pâtes dans une grande casserole d’eau bouillante salée, le temps du paquet moins 1 minute.',
+'Ajouter le thon émietté dans la sauce, mélanger délicatement 2 minutes pour le réchauffer sans le réduire en purée.',
+'Égoutter les pâtes, les verser dans la sauteuse et mélanger 1 minute sur le feu. Servir avec un filet d’huile d’olive et, si vous aimez, du persil ou du basilic.'],
+'Spaghettis bolognaise':[
+'Peler et hacher finement les oignons et l’ail. Râper les carottes.',
+'Chauffer l’huile dans une grande cocotte à feu moyen. Faire fondre oignons et carottes 8 minutes en remuant, puis l’ail 1 minute.',
+'Monter le feu, ajouter la viande hachée et la faire colorer en l’écrasant à la cuillère pour défaire les paquets, 6 à 8 minutes. Saler, poivrer.',
+'Ajouter le concentré de tomate, mélanger 1 minute, puis les tomates concassées et un demi-verre d’eau. Porter à frémissement.',
+'Couvrir à moitié et laisser mijoter 40 minutes à feu doux, en remuant de temps en temps. La sauce doit être épaisse et brillante. Rectifier l’assaisonnement, ajouter une pincée de sucre si elle est trop acide.',
+'Cuire les spaghettis dans une grande quantité d’eau bouillante salée, le temps du paquet moins 1 minute. Égoutter.',
+'Servir les pâtes nappées de sauce. Laisser refroidir la moitié de la sauce, la mettre en boîtes et au congélateur : elle se garde 3 mois.'],
+'Lasagnes':[
+'Préparer la sauce à la viande : faire fondre l’oignon haché dans un peu d’huile 5 minutes, ajouter la viande et la colorer 6 à 8 minutes, puis les tomates concassées, sel, poivre. Mijoter 20 minutes.',
+'Préparer la béchamel : faire fondre le beurre dans une casserole, ajouter la farine et remuer 1 minute. Verser le lait froid petit à petit en fouettant. Cuire à feu moyen en remuant jusqu’à épaississement, 5 à 6 minutes. Saler, poivrer, une pincée de muscade.',
+'Préchauffer le four à 180°. Beurrer un plat à gratin.',
+'Monter : une fine couche de béchamel au fond, puis feuilles de lasagne, sauce à la viande, béchamel, gruyère. Répéter 3 fois en terminant par béchamel et gruyère.',
+'Couvrir de papier aluminium et enfourner 25 minutes. Retirer l’aluminium et poursuivre 10 à 15 minutes jusqu’à ce que le dessus soit doré et que les bords bouillonnent.',
+'Laisser reposer 10 minutes avant de couper : les parts se tiennent mieux. Se congèle très bien en portions, cuit ou cru.'],
+'Riz cantonais au poulet':[
+'Cuire le riz à l’eau (1 volume de riz pour 1,5 volume d’eau, 11 minutes à couvert), puis l’étaler sur un plat pour le refroidir. Idéalement, utiliser du riz de la veille.',
+'Couper le poulet en petits dés. Émincer l’oignon. Battre les œufs avec une pincée de sel.',
+'Chauffer 1 cuillère d’huile dans une grande poêle ou un wok à feu vif. Verser les œufs, laisser prendre en omelette fine 1 minute, la retourner, puis la couper en lamelles sur une planche.',
+'Dans la même poêle, faire dorer le poulet 5 à 6 minutes à feu vif avec l’oignon. Ajouter les petits pois 2 minutes.',
+'Ajouter le riz froid, bien mélanger et faire sauter 3 à 4 minutes : les grains doivent se détacher et grésiller.',
+'Verser la sauce soja, ajouter les lamelles d’omelette, mélanger 1 minute et servir chaud.'],
+'Risotto aux champignons':[
+'Chauffer le bouillon et le garder frémissant. Nettoyer les champignons et les émincer. Hacher l’oignon finement.',
+'Dans une sauteuse, faire sauter les champignons à feu vif dans 1 cuillère d’huile, 5 minutes, jusqu’à ce qu’ils soient dorés. Saler et réserver.',
+'Dans la même sauteuse, faire fondre l’oignon dans le reste d’huile 4 minutes. Ajouter le riz et le nacrer 2 minutes en remuant : les grains deviennent translucides.',
+'Verser une louche de bouillon chaud. Remuer régulièrement et attendre qu’elle soit absorbée avant d’ajouter la suivante. Continuer ainsi 16 à 18 minutes.',
+'Goûter : le riz doit être fondant avec un cœur encore un peu ferme. Ajouter les champignons pour les 2 dernières minutes.',
+'Hors du feu, incorporer le beurre et le parmesan en remuant vivement. Couvrir 2 minutes puis servir immédiatement, avec du poivre et un peu de parmesan.'],
+'Gratin de pâtes au poulet':[
+'Cuire les pâtes dans une grande casserole d’eau bouillante salée, 2 minutes de moins que le temps indiqué. Égoutter.',
+'Couper le poulet en dés et le faire dorer 6 à 7 minutes dans une poêle avec un filet d’huile. Saler, poivrer.',
+'Préparer la béchamel : fondre le beurre, ajouter la farine, remuer 1 minute, verser le lait froid peu à peu en fouettant. Cuire jusqu’à épaississement, 5 minutes. Saler, poivrer, muscade.',
+'Préchauffer le four à 200°. Mélanger pâtes, poulet et béchamel dans un plat à gratin, en gardant un peu de béchamel pour le dessus.',
+'Répartir le reste de béchamel et le gruyère râpé. Enfourner 20 à 25 minutes, jusqu’à ce que le dessus soit bien doré.',
+'Laisser reposer 5 minutes. Se congèle en portions une fois refroidi.'],
+'Poulet rôti et pommes de terre':[
+'Sortir le poulet du frigo 30 minutes avant. Préchauffer le four à 200°.',
+'Laver les pommes de terre et les couper en quartiers. Écraser les gousses d’ail non pelées.',
+'Frotter le poulet avec l’huile, du sel, du poivre et le thym, y compris l’intérieur. Le poser dans un grand plat, sur le dos.',
+'Répartir les pommes de terre et l’ail autour, les enrober du gras du plat, saler.',
+'Enfourner 1 h 15 pour un poulet de 1,4 kg (compter 25 minutes par 500 g). Arroser du jus et retourner les pommes de terre toutes les 25 minutes.',
+'Vérifier la cuisson : le jus qui coule en piquant la cuisse doit être clair, pas rosé. Laisser reposer le poulet 10 minutes sous une feuille d’aluminium avant de le découper.'],
+'Poulet au curry et riz':[
+'Couper le poulet en morceaux de 3 cm. Émincer l’oignon.',
+'Chauffer l’huile dans une sauteuse à feu moyen-vif. Faire dorer le poulet 5 minutes sur toutes les faces. Réserver.',
+'Dans la même sauteuse, faire fondre l’oignon 5 minutes. Ajouter le curry et remuer 30 secondes pour qu’il libère ses arômes.',
+'Remettre le poulet, verser le lait de coco et un demi-verre d’eau. Saler. Laisser mijoter 15 minutes à feu doux, sans couvrir, jusqu’à ce que la sauce épaississe.',
+'Pendant ce temps, rincer le riz basmati, le cuire 11 minutes dans 1,5 fois son volume d’eau salée à couvert, puis laisser reposer 5 minutes.',
+'Rectifier l’assaisonnement du curry et servir avec le riz. Coriandre fraîche et jus de citron vert si vous en avez.'],
+'Poulet basquaise':[
+'Épépiner les poivrons et les couper en lanières. Émincer les oignons, hacher l’ail.',
+'Saler et poivrer les cuisses de poulet. Les faire dorer 8 minutes de chaque côté dans l’huile chaude, dans une cocotte. Réserver.',
+'Dans la cocotte, faire fondre oignons et poivrons 10 minutes à feu moyen, puis l’ail 1 minute.',
+'Ajouter les tomates concassées, remettre le poulet, saler, poivrer, un peu de piment si vous aimez. Couvrir et mijoter 40 minutes à feu doux.',
+'Cuire le riz les 15 dernières minutes.',
+'La sauce doit être épaisse ; sinon la faire réduire quelques minutes à découvert. Servir avec le riz.'],
+'Escalopes de dinde à la crème':[
+'Nettoyer et émincer les champignons. Mettre une grande casserole d’eau salée à bouillir pour les pâtes.',
+'Saler et poivrer les escalopes. Les saisir 3 minutes de chaque côté dans une poêle chaude avec un peu de beurre ou d’huile. Réserver au chaud sous une assiette.',
+'Dans la même poêle, faire sauter les champignons à feu vif 5 minutes.',
+'Ajouter la crème et la moutarde, mélanger et laisser épaissir 2 à 3 minutes à feu doux. Remettre les escalopes 1 minute pour les napper.',
+'Cuire les tagliatelles le temps indiqué moins 1 minute, égoutter.',
+'Servir les escalopes avec la sauce et les pâtes. Persil haché au moment de servir.'],
+'Tajine de poulet aux olives et citron':[
+'Émincer les oignons. Couper le citron confit en petits morceaux en retirant les pépins.',
+'Faire dorer les cuisses de poulet 6 minutes par face dans un plat à tajine ou une cocotte avec 2 cuillères d’huile. Réserver.',
+'Faire fondre les oignons 8 minutes, ajouter curcuma et gingembre, remuer 1 minute.',
+'Remettre le poulet, ajouter le citron confit, les olives et un verre d’eau. Saler légèrement (les olives et le citron sont déjà salés).',
+'Couvrir et mijoter 40 minutes à feu doux. Retourner le poulet à mi-cuisson.',
+'Préparer la semoule : la mouiller avec son volume d’eau chaude salée, couvrir 5 minutes, égrener à la fourchette avec une noix de beurre. Servir le tajine dessus, avec de la coriandre.'],
+'Poulet riz au safran':[
+'Faire infuser le safran dans 3 cuillères d’eau chaude. Émincer l’oignon. Rincer le riz jusqu’à ce que l’eau soit claire.',
+'Chauffer l’huile dans une cocotte. Faire dorer les cuisses de poulet 8 minutes par face avec l’oignon. Saler, poivrer.',
+'Ajouter un verre d’eau, couvrir et laisser cuire 25 minutes à feu doux.',
+'Cuire le riz : 1,5 fois son volume d’eau salée, 11 minutes à couvert, puis verser l’infusion de safran sur le dessus et laisser reposer 5 minutes sans remuer.',
+'Mélanger délicatement le riz pour marbrer le jaune et le blanc.',
+'Servir le poulet avec son jus, le riz et le yaourt à côté.'],
+'Zereshk polo ba morgh':[
+'Rincer le riz 3 fois et le laisser tremper 30 minutes dans de l’eau salée. Faire infuser le safran pilé dans 4 cuillères d’eau chaude.',
+'Faire dorer les cuisses de poulet dans 30 g de beurre avec les oignons émincés, 10 minutes. Ajouter la moitié du safran, sel, poivre, un verre d’eau. Couvrir et cuire 45 minutes à feu doux : le poulet doit se détacher de l’os.',
+'Cuire le riz : le plonger 6 à 7 minutes dans une grande casserole d’eau bouillante salée, il doit être encore ferme. Égoutter.',
+'Dans la casserole, mettre 2 cuillères d’huile et un fond d’eau, remettre le riz en dôme, faire 3 trous avec le manche d’une cuillère. Couvrir avec un torchon sous le couvercle et cuire 30 minutes à feu très doux pour le tahdig croustillant.',
+'Rincer les zereshk, les faire revenir 2 minutes dans 30 g de beurre avec le sucre et un peu de safran, sans les brûler.',
+'Servir le riz, parsemer de zereshk, poser le poulet dessus et arroser de jus de cuisson.'],
+'Chili con carne':[
+'Hacher les oignons et l’ail, couper les poivrons en dés. Égoutter et rincer les haricots.',
+'Chauffer 2 cuillères d’huile dans une grande cocotte. Faire fondre oignons et poivrons 8 minutes, puis l’ail 1 minute.',
+'Ajouter la viande hachée à feu vif et la colorer 8 minutes en la défaisant à la cuillère. Saler.',
+'Ajouter cumin et paprika, remuer 1 minute, puis les tomates concassées et un verre d’eau. Porter à frémissement.',
+'Laisser mijoter 30 minutes à découvert, puis ajouter les haricots et poursuivre 10 minutes. Rectifier sel et piment.',
+'Cuire le riz. Servir le chili avec le riz, éventuellement crème et coriandre. Refroidir la moitié du chili, la mettre en boîtes et au congélateur.'],
+'Hachis parmentier':[
+'Peler les pommes de terre, les couper en morceaux et les cuire 20 minutes dans de l’eau salée, jusqu’à ce qu’un couteau s’enfonce sans résistance.',
+'Pendant ce temps, faire fondre les oignons hachés dans un peu d’huile 6 minutes, ajouter la viande et la colorer 8 minutes. Saler, poivrer, ajouter du persil ou de la muscade selon vos goûts.',
+'Égoutter les pommes de terre, les écraser au presse-purée avec le beurre et le lait chaud. Saler, poivrer, muscade.',
+'Préchauffer le four à 200°. Étaler la viande dans un plat à gratin, puis la purée par-dessus. Strier la surface à la fourchette.',
+'Parsemer de gruyère et enfourner 25 minutes, jusqu’à ce que le dessus soit doré.',
+'Servir avec une salade verte. Se congèle très bien en portions.'],
+'Bœuf bourguignon':[
+'La veille si possible : couper la viande en cubes de 4 cm, la mettre avec le vin et le bouquet garni au frais.',
+'Égoutter la viande en gardant le vin, l’éponger. Peler et couper les carottes en tronçons, émincer les oignons.',
+'Dans une cocotte, faire dorer la viande par petites quantités dans 2 cuillères d’huile à feu vif, 3 minutes par face. Réserver.',
+'Faire fondre oignons et carottes 5 minutes. Remettre la viande, saupoudrer de farine, remuer 2 minutes sur le feu.',
+'Verser le vin et le bouquet garni, compléter avec de l’eau pour couvrir à peine. Saler, poivrer. Porter à frémissement, couvrir et cuire 2 h 30 à feu très doux ou au four à 150°. La viande doit se défaire à la fourchette.',
+'Faire sauter les champignons au beurre et les ajouter 20 minutes avant la fin. Rectifier l’assaisonnement. Servir avec pommes de terre vapeur ou pâtes fraîches. Encore meilleur réchauffé le lendemain, et parfait à congeler.'],
+'Blanquette de veau':[
+'Mettre la viande dans une cocotte, couvrir d’eau froide, porter à ébullition et écumer 5 minutes. Jeter l’eau et rincer la viande.',
+'Remettre la viande avec les carottes en tronçons, les oignons entiers, un bouquet garni, sel. Couvrir d’eau et cuire 1 h 30 à petit frémissement, couvert.',
+'Faire sauter les champignons 5 minutes au beurre. Prélever 50 cl de bouillon de cuisson.',
+'Préparer la liaison : fondre 40 g de beurre, ajouter la farine, cuire 1 minute, verser le bouillon petit à petit en fouettant. Laisser épaissir 5 minutes.',
+'Ajouter la crème et un trait de jus de citron. Saler, poivrer. Verser sur la viande égouttée avec les champignons et les carottes, réchauffer 5 minutes sans bouillir.',
+'Cuire le riz et servir bien chaud. Se congèle sans problème.'],
+'Boulettes de bœuf sauce tomate':[
+'Mélanger la viande hachée, l’œuf, l’oignon haché très fin, la chapelure, sel, poivre et persil haché. Malaxer sans trop insister.',
+'Former des boulettes de la taille d’une noix avec les mains humides, environ 20 boulettes. Les poser sur une assiette.',
+'Chauffer l’huile dans une sauteuse, faire dorer les boulettes 5 minutes en les roulant. Elles n’ont pas besoin d’être cuites à cœur.',
+'Verser les tomates concassées, saler, poivrer, ajouter une pincée de sucre et un peu d’origan. Couvrir et mijoter 20 minutes à feu doux.',
+'Cuire les pâtes dans une grande casserole d’eau bouillante salée, le temps du paquet moins 1 minute. Égoutter.',
+'Servir les boulettes et leur sauce sur les pâtes, avec du parmesan. Les boulettes en sauce se congèlent très bien.'],
+'Steak haché et haricots verts':[
+'Équeuter les haricots verts s’ils sont frais. Les cuire 8 à 10 minutes dans de l’eau bouillante salée, ou 6 minutes s’ils sont surgelés. Ils doivent rester légèrement croquants.',
+'Égoutter les haricots et les passer sous l’eau froide pour garder leur couleur.',
+'Sortir les steaks 15 minutes avant. Saler juste avant la cuisson.',
+'Chauffer une poêle à feu vif sans matière grasse. Saisir les steaks 2 minutes par face pour une cuisson à point, 1 minute 30 pour saignant. Poivrer, laisser reposer 2 minutes.',
+'Dans la poêle des steaks, faire fondre le beurre avec l’ail haché, ajouter les haricots et les faire sauter 3 minutes.',
+'Servir aussitôt.'],
+'Escalopes de poulet et pommes sautées':[
+'Peler les pommes de terre et les couper en dés de 2 cm. Les rincer et bien les sécher dans un torchon.',
+'Chauffer l’huile dans une grande poêle à feu moyen-vif. Ajouter les pommes de terre en une couche, ne pas remuer pendant 5 minutes pour qu’elles dorent, puis retourner. Cuire 20 minutes au total, saler à la fin.',
+'Saler et poivrer les escalopes. Les saisir dans une seconde poêle chaude avec un filet d’huile, 4 minutes par face. Elles doivent être dorées et juste cuites à cœur.',
+'Ajouter l’ail haché et le persil aux pommes de terre 1 minute avant la fin.',
+'Laisser reposer les escalopes 2 minutes puis servir avec les pommes sautées et un trait de citron.'],
+'Sauté de poulet au caramel':[
+'Couper le poulet en morceaux de 3 cm. Émincer l’oignon. Rincer le riz.',
+'Dans une sauteuse, faire dorer le poulet avec l’oignon dans un filet d’huile, 6 minutes à feu vif.',
+'Saupoudrer de sucre, laisser caraméliser 2 minutes sans remuer, puis mélanger pour enrober.',
+'Ajouter la sauce soja, le gingembre et un demi-verre d’eau. Porter à frémissement, couvrir et mijoter 20 minutes.',
+'Cuire le riz les 15 dernières minutes.',
+'Découvrir et laisser réduire 3 à 5 minutes : la sauce doit devenir sirupeuse et napper le poulet. Servir avec le riz, ciboule ou coriandre.'],
+'Rôti de dinde aux carottes':[
+'Sortir le rôti 30 minutes avant. Préchauffer le four à 180°.',
+'Peler les carottes et les couper en tronçons. Émincer les oignons. Écraser l’ail.',
+'Saler et poivrer le rôti. Le dorer 3 minutes sur chaque face dans une cocotte avec l’huile.',
+'Ajouter carottes, oignons, ail, thym autour du rôti, un verre d’eau. Couvrir.',
+'Enfourner 1 h 15. Retourner le rôti à mi-cuisson et arroser. La dinde doit rester moelleuse : sortir dès que le jus est clair.',
+'Laisser reposer 10 minutes sous l’aluminium avant de trancher. Servir avec les carottes et le jus. Les restes tranchés se congèlent.'],
+'Tomates farcies':[
+'Préchauffer le four à 180°. Couper le chapeau des tomates, les creuser à la cuillère en gardant la chair. Saler l’intérieur et les retourner 10 minutes sur du papier absorbant.',
+'Hacher l’oignon, l’ail et le persil. Mélanger avec la viande hachée, l’œuf, la chair des tomates hachée, sel, poivre.',
+'Garnir les tomates de farce sans tasser, remettre les chapeaux.',
+'Verser le riz cru dans le fond du plat avec 1,5 fois son volume d’eau salée. Poser les tomates dessus.',
+'Enfourner 45 minutes. Le riz cuit dans le jus des tomates ; ajouter un peu d’eau s’il sèche.',
+'Laisser reposer 5 minutes et servir. Les tomates farcies cuites se congèlent.'],
+'Khoresh gheymeh':[
+'Rincer les pois cassés. Couper la viande en cubes de 2 cm. Émincer les oignons. Percer les citrons séchés avec la pointe d’un couteau.',
+'Dans une cocotte, faire dorer les oignons dans 3 cuillères d’huile 8 minutes, ajouter le curcuma, puis la viande et la colorer 5 minutes.',
+'Ajouter le concentré de tomate, remuer 2 minutes, puis les pois cassés, les citrons séchés, sel, poivre, et 75 cl d’eau chaude.',
+'Couvrir et mijoter 1 h 30 à feu doux. Les pois doivent être tendres et la viande fondante. Ajouter un peu d’eau si nécessaire.',
+'Pendant ce temps, cuire le riz basmati à l’iranienne : trempage, ébullition 6 minutes, égouttage, puis étuvage 30 minutes à feu doux.',
+'Couper les pommes de terre en frites fines et les faire frire jusqu’à ce qu’elles soient dorées. Servir le khoresh sur le riz, avec les frites dessus.'],
+'Ghormeh sabzi':[
+'Laver et sécher les herbes, retirer les tiges dures, hacher finement. Couper la viande en cubes de 3 cm. Percer les citrons séchés.',
+'Dans une grande poêle, faire revenir les herbes hachées dans 4 cuillères d’huile à feu moyen 15 à 20 minutes, en remuant : elles doivent devenir vert foncé et parfumées, sans brûler. Ajouter le fenugrec les 2 dernières minutes.',
+'Dans une cocotte, faire dorer les oignons émincés 8 minutes, puis la viande 5 minutes avec du curcuma, sel et poivre.',
+'Ajouter les herbes, les haricots rouges (prétrempés ou en boîte rincés), les citrons séchés et 75 cl d’eau chaude. Couvrir.',
+'Mijoter 2 heures à feu doux. Vérifier l’eau de temps en temps. Le khoresh est prêt quand la viande se défait et que l’huile remonte en surface. Presser les citrons avec la cuillère pour libérer leur acidité.',
+'Servir avec du riz basmati cuit à l’iranienne. Se congèle très bien : préparer une double quantité.'],
+'Saumon au four et riz':[
+'Préchauffer le four à 200°. Rincer le riz.',
+'Poser les pavés de saumon dans un plat huilé, peau dessous. Saler, poivrer, arroser d’huile d’olive et de jus d’un demi-citron. Poser des rondelles de citron dessus.',
+'Cuire le riz : 1,5 fois son volume d’eau salée, 11 minutes à couvert, puis 5 minutes de repos.',
+'Enfourner le saumon 12 à 15 minutes selon l’épaisseur. Il est cuit quand la chair se sépare en lamelles sous la fourchette, encore légèrement rosée au centre.',
+'Couper le brocoli en bouquets et le cuire 5 minutes à la vapeur ou dans de l’eau bouillante salée.',
+'Servir le saumon avec le riz et le brocoli, parsemé d’aneth.'],
+'Cabillaud et purée maison':[
+'Peler les pommes de terre, les couper en morceaux réguliers et les cuire 20 minutes dans de l’eau salée.',
+'Égoutter, écraser au presse-purée, incorporer le beurre puis le lait chaud petit à petit. Saler, poivrer, muscade. Garder au chaud.',
+'Éponger le cabillaud, saler légèrement 10 minutes avant la cuisson : la chair se tient mieux.',
+'Cuire le poisson : à la poêle dans un peu de beurre, 4 minutes côté peau puis 2 à 3 minutes de l’autre côté, ou 8 minutes à la vapeur. La chair doit devenir opaque et se détacher en feuillets.',
+'Arroser d’un trait de jus de citron et servir avec la purée. Un peu de persil ou de ciboulette.'],
+'Poisson pané et épinards':[
+'Préchauffer le four à 220° si vous cuisez les poissons panés au four, sinon chauffer une poêle avec un peu d’huile.',
+'Cuire les poissons panés : 15 minutes au four en retournant à mi-cuisson, ou 4 minutes par face à la poêle, jusqu’à ce qu’ils soient bien dorés et croustillants.',
+'Faire fondre les épinards surgelés dans une sauteuse à feu moyen avec l’ail haché, 8 à 10 minutes, en remuant pour évaporer l’eau.',
+'Ajouter la crème, saler, poivrer, muscade. Laisser réduire 2 minutes.',
+'Servir avec un quartier de citron, et du riz ou une purée si les appétits sont grands.'],
+'Papillotes de poisson aux légumes':[
+'Préchauffer le four à 200°. Rincer le riz.',
+'Couper courgettes et carottes en très fines lamelles ou en julienne : elles doivent cuire en même temps que le poisson.',
+'Découper 4 grands rectangles de papier cuisson. Répartir les légumes au centre, poser un filet dessus, saler, poivrer, une rondelle de citron, un filet d’huile.',
+'Fermer chaque papillote en repliant les bords hermétiquement, comme un chausson.',
+'Cuire le riz. Enfourner les papillotes 18 à 20 minutes : elles doivent gonfler.',
+'Ouvrir les papillotes à table avec précaution, la vapeur brûle. Servir avec le riz.'],
+'Gratin dauphinois':[
+'Préchauffer le four à 170°. Peler les pommes de terre et les couper en rondelles de 3 mm, sans les rincer : l’amidon lie le gratin.',
+'Frotter le plat avec une gousse d’ail coupée, puis le beurrer.',
+'Chauffer le lait et la crème avec l’ail haché, sel, poivre et muscade, sans bouillir.',
+'Disposer les pommes de terre en couches régulières, verser le mélange chaud dessus : il doit affleurer.',
+'Enfourner 1 heure à 1 h 15. Le dessus doit être doré et un couteau doit traverser sans résistance. Si le dessus colore trop vite, couvrir d’aluminium.',
+'Laisser reposer 10 minutes avant de servir. Parfait avec une viande ou une salade.'],
+'Ratatouille':[
+'Couper aubergines et courgettes en dés de 2 cm, les poivrons en lanières, les tomates en quartiers, émincer les oignons, hacher l’ail.',
+'Faire revenir chaque légume séparément dans un peu d’huile d’olive à feu vif, 6 à 8 minutes, jusqu’à légère coloration : aubergines, puis courgettes, puis poivrons. Les réserver au fur et à mesure.',
+'Dans la cocotte, faire fondre les oignons 5 minutes, ajouter l’ail et les tomates, saler.',
+'Réunir tous les légumes, ajouter le thym, poivrer. Couvrir et mijoter 30 minutes à feu doux en remuant délicatement une ou deux fois.',
+'Découvrir les 10 dernières minutes si la ratatouille rend trop d’eau. Rectifier l’assaisonnement, un filet d’huile d’olive crue à la fin.',
+'Servir chaud ou froid, avec riz, œufs, semoule ou une viande grillée. Se congèle en portions.'],
+'Curry de lentilles (dahl)':[
+'Rincer les lentilles corail. Hacher l’oignon et l’ail.',
+'Dans une cocotte, faire fondre l’oignon dans 2 cuillères d’huile 5 minutes. Ajouter l’ail, le curry et le cumin, remuer 1 minute.',
+'Ajouter les lentilles, les tomates concassées, le lait de coco et 60 cl d’eau. Saler. Porter à ébullition.',
+'Baisser le feu et cuire 20 à 25 minutes à découvert en remuant de temps en temps. Les lentilles doivent être fondantes et le dahl onctueux ; ajouter de l’eau s’il épaissit trop.',
+'Cuire le riz les 15 dernières minutes.',
+'Rectifier sel et épices, ajouter un jus de citron. Servir avec le riz et de la coriandre. Se congèle en portions.'],
+'Wok de légumes et nouilles':[
+'Couper carottes et poivron en fins bâtonnets, le brocoli en petits bouquets. Râper le gingembre.',
+'Cuire les nouilles selon le paquet, en général 3 à 4 minutes dans l’eau bouillante. Égoutter, rincer à l’eau froide, réserver avec un filet d’huile.',
+'Chauffer le wok ou une grande poêle à feu très vif avec l’huile. Faire sauter les carottes et le brocoli 4 minutes en remuant sans cesse.',
+'Ajouter le poivron et le gingembre, 2 minutes de plus. Les légumes doivent rester croquants.',
+'Ajouter les nouilles et la sauce soja, mélanger 2 minutes pour bien réchauffer.',
+'Servir aussitôt, avec des graines de sésame ou de la ciboule si vous en avez.'],
+'Galettes de pommes de terre':[
+'Peler et râper les pommes de terre et l’oignon avec une râpe à gros trous. Les mettre dans un torchon et presser fort pour extraire le maximum d’eau.',
+'Mélanger avec les œufs, la farine, sel, poivre et un peu de persil ou de muscade.',
+'Chauffer l’huile dans une grande poêle à feu moyen. Déposer des petits tas de pâte, les aplatir à 1 cm d’épaisseur.',
+'Cuire 5 à 6 minutes par face sans toucher, jusqu’à une croûte bien dorée. Procéder en plusieurs fournées en ajoutant de l’huile.',
+'Égoutter sur du papier absorbant, saler. Servir chaud avec la salade verte et, si vous aimez, du fromage blanc aux herbes.'],
+'Gratin de courgettes':[
+'Laver les courgettes, les couper en rondelles de 5 mm. Préchauffer le four à 180°.',
+'Faire revenir les courgettes dans un peu d’huile à feu vif 8 minutes avec l’ail haché, pour les colorer et évaporer leur eau. Saler, poivrer.',
+'Battre les œufs avec la crème, le gruyère, sel, poivre, muscade.',
+'Répartir les courgettes dans un plat à gratin, verser l’appareil dessus.',
+'Enfourner 30 minutes : le gratin doit être pris et doré.',
+'Laisser reposer 5 minutes. Se mange chaud ou tiède, seul ou avec une viande.'],
+'Chou-fleur gratiné':[
+'Détailler le chou-fleur en bouquets. Les cuire 10 à 12 minutes dans de l’eau bouillante salée, ils doivent rester légèrement fermes. Bien égoutter.',
+'Préparer la béchamel : fondre le beurre, ajouter la farine, cuire 1 minute, verser le lait froid petit à petit en fouettant. Épaissir 5 minutes à feu moyen. Saler, poivrer, muscade.',
+'Préchauffer le four à 200°. Disposer le chou-fleur dans un plat beurré.',
+'Napper de béchamel et parsemer de gruyère.',
+'Enfourner 20 minutes, jusqu’à ce que le dessus soit doré et bouillonnant.',
+'Servir seul ou avec une viande blanche.'],
+'Adas polo':[
+'Rincer le riz et le laisser tremper 30 minutes. Faire infuser le safran dans 3 cuillères d’eau chaude.',
+'Cuire les lentilles 20 minutes dans de l’eau salée, elles doivent rester entières. Égoutter.',
+'Plonger le riz 6 minutes dans une grande casserole d’eau bouillante salée, égoutter.',
+'Dans la casserole, mettre 30 g de beurre et un fond d’eau, alterner couches de riz et de lentilles avec le cumin. Couvrir avec un torchon sous le couvercle et cuire 30 minutes à feu très doux.',
+'Faire fondre les oignons émincés dans 30 g de beurre 15 minutes jusqu’à ce qu’ils soient bien dorés, ajouter raisins secs et dattes coupées 3 minutes.',
+'Verser le safran sur une partie du riz, mélanger délicatement. Servir parsemé des oignons, raisins et dattes.'],
+'Quiche aux poireaux':[
+'Nettoyer les poireaux, les émincer finement. Les faire fondre au beurre dans une sauteuse 15 minutes à feu doux, à couvert, en remuant. Saler, poivrer.',
+'Préchauffer le four à 180°. Foncer un moule avec la pâte brisée, piquer le fond à la fourchette.',
+'Battre les œufs avec la crème et le lait, saler, poivrer, muscade.',
+'Répartir les poireaux sur la pâte, verser l’appareil, parsemer de gruyère.',
+'Enfourner 35 à 40 minutes : la quiche doit être dorée et prise au centre.',
+'Attendre 10 minutes avant de couper. Bonne chaude ou froide, se congèle en parts.'],
+'Omelette aux champignons':[
+'Nettoyer les champignons et les émincer. Hacher le persil.',
+'Faire sauter les champignons à feu vif dans la moitié du beurre 5 minutes, jusqu’à ce qu’ils soient dorés. Saler, poivrer, réserver.',
+'Battre les œufs à la fourchette avec sel et poivre, juste pour mélanger blancs et jaunes.',
+'Chauffer le reste du beurre dans une poêle à feu moyen-vif. Verser les œufs. Quand les bords prennent, ramener les bords vers le centre avec une spatule pour que le liquide s’écoule dessous, 2 à 3 minutes.',
+'Quand l’omelette est prise mais encore baveuse dessus, ajouter champignons et persil, plier en deux et glisser sur le plat.',
+'Servir aussitôt avec la salade verte.'],
+'Kuku sabzi':[
+'Laver, sécher et hacher finement les herbes. Hacher les noix grossièrement.',
+'Battre les œufs avec la farine, le curcuma, sel et poivre. Incorporer les herbes et les noix : le mélange doit être très vert et épais.',
+'Chauffer l’huile dans une poêle à feu moyen. Verser le mélange, lisser, couvrir et cuire 12 à 15 minutes à feu doux : le dessous doit être bien doré.',
+'Retourner le kuku en le faisant glisser sur une assiette puis en le remettant à l’envers, ou couper en quarts pour le retourner plus facilement. Cuire 8 à 10 minutes de l’autre côté.',
+'Autre méthode : 30 minutes au four à 180° dans un plat huilé.',
+'Servir chaud ou froid, avec du yaourt et du pain. Se garde 3 jours au frigo.'],
+'Crêpes salées dinde fromage':[
+'Mélanger la farine avec les œufs, puis verser le lait petit à petit en fouettant pour éviter les grumeaux. Saler. Laisser reposer 30 minutes.',
+'Chauffer une poêle à crêpes, la graisser légèrement au beurre. Verser une louche de pâte, faire tourner, cuire 1 minute par face. Empiler les crêpes.',
+'Préchauffer le four à 180° ou garder la poêle chaude.',
+'Garnir chaque crêpe d’une tranche de jambon de dinde et de gruyère râpé, plier en carré ou en rouleau.',
+'Réchauffer 3 minutes par face à la poêle ou 8 minutes au four, jusqu’à ce que le fromage fonde.',
+'Servir avec une salade verte.'],
+'Pizza maison':[
+'Préchauffer le four au maximum, 240° ou plus, avec la plaque à l’intérieur.',
+'Préparer la sauce : faire réduire les tomates concassées 10 minutes à feu vif avec sel, poivre et origan, pour qu’elle épaississe.',
+'Émincer les poivrons et les champignons. Égoutter la mozzarella et la couper en tranches, l’éponger.',
+'Étaler la pâte sur du papier cuisson, étaler une fine couche de sauce, répartir mozzarella, poivrons et champignons. Un filet d’huile d’olive.',
+'Glisser sur la plaque chaude et cuire 10 à 12 minutes : la pâte doit être dorée et gonflée, le fromage bouillonnant.',
+'Origan frais ou basilic à la sortie du four.'],
+'Croque-monsieur à la dinde et salade':[
+'Beurrer légèrement les tranches de pain de mie sur une face.',
+'Monter les croques : pain (beurre à l’extérieur), une tranche de jambon de dinde, une tranche d’emmental, et le second pain beurre vers l’extérieur.',
+'Cuire à la poêle à feu moyen 3 à 4 minutes par face en pressant légèrement avec une spatule, ou 8 minutes au four à 200°.',
+'Le pain doit être doré et croustillant, le fromage fondu.',
+'Assaisonner la salade verte avec une vinaigrette moutarde et servir aussitôt.'],
+'Soupe de légumes':[
+'Peler et couper tous les légumes en morceaux de taille égale. Émincer les poireaux et bien les rincer.',
+'Dans une grande casserole, faire suer l’oignon et les poireaux 5 minutes dans une noix de beurre ou un filet d’huile.',
+'Ajouter carottes, pommes de terre, navet, le cube de bouillon et 1,5 litre d’eau. Porter à ébullition.',
+'Cuire 30 minutes à couvert, jusqu’à ce que les légumes s’écrasent facilement.',
+'Mixer plus ou moins fin selon les goûts. Rectifier sel et poivre, ajouter de l’eau si elle est trop épaisse.',
+'Servir avec une cuillère de crème ou un filet d’huile d’olive. Se congèle très bien en portions individuelles.'],
+'Velouté de potiron':[
+'Peler le potiron, retirer les graines et le couper en cubes. Émincer l’oignon.',
+'Faire fondre l’oignon 5 minutes dans une noix de beurre, sans coloration.',
+'Ajouter le potiron, le cube de bouillon et de l’eau à hauteur. Porter à ébullition puis cuire 25 minutes à couvert.',
+'Mixer finement. Ajouter la crème, la muscade, saler, poivrer.',
+'Réchauffer 2 minutes sans bouillir. Servir avec des graines de courge grillées ou des croûtons. Se congèle sans la crème, à ajouter au réchauffage.'],
+'Soupe de lentilles corail':[
+'Rincer les lentilles. Hacher l’oignon, couper les carottes en petits dés.',
+'Dans une casserole, faire fondre oignon et carottes 5 minutes dans un filet d’huile, ajouter le cumin 30 secondes.',
+'Ajouter les lentilles, les tomates concassées, le cube de bouillon et 1 litre d’eau. Porter à ébullition.',
+'Cuire 20 minutes à feu moyen, les lentilles doivent être fondantes.',
+'Mixer grossièrement ou laisser telle quelle. Saler, poivrer, jus de citron.',
+'Servir avec du pain grillé et un filet d’huile d’olive. Se congèle très bien.'],
+'Couscous poulet merguez':[
+'Peler et couper carottes et navets en tronçons, les courgettes en gros morceaux. Rincer les pois chiches.',
+'Dans une grande cocotte, faire dorer les cuisses de poulet 8 minutes dans 2 cuillères d’huile. Ajouter l’oignon émincé 5 minutes.',
+'Ajouter le ras el hanout, remuer 1 minute, puis les tomates concassées, carottes, navets et 1,5 litre d’eau. Saler. Couvrir et mijoter 30 minutes.',
+'Ajouter courgettes et pois chiches, poursuivre 15 minutes. Le bouillon doit être parfumé et les légumes tendres.',
+'Griller les merguez à la poêle 8 à 10 minutes en les retournant.',
+'Préparer la semoule : la mouiller avec son volume d’eau chaude salée, couvrir 5 minutes, égrener avec une noix de beurre. Servir la semoule, les légumes, le bouillon, le poulet et les merguez, avec de la harissa à part.'],
+'Salade César au poulet':[
+'Saler et poivrer les blancs de poulet, les griller 6 minutes par face à la poêle ou au grill. Laisser reposer 5 minutes puis trancher.',
+'Laver et essorer la romaine, la couper en tronçons.',
+'Si vous faites les croûtons : couper du pain en dés, les dorer 8 minutes au four à 200° avec un filet d’huile.',
+'Râper ou copeauter le parmesan.',
+'Mélanger la salade avec la sauce césar juste avant de servir, ajouter le poulet, les croûtons et le parmesan.',
+'Poivrer et servir aussitôt pour que la salade reste croquante.'],
+'Salade de pâtes':[
+'Cuire les pâtes dans une grande casserole d’eau bouillante salée, le temps du paquet. Égoutter, rincer rapidement à l’eau froide, égoutter à nouveau et arroser d’un filet d’huile.',
+'Couper les tomates et le concombre en dés, la feta en cubes. Dénoyauter les olives si besoin.',
+'Préparer la vinaigrette : huile d’olive, un peu de vinaigre ou de jus de citron, sel, poivre, origan.',
+'Mélanger pâtes, légumes, feta, olives et vinaigrette.',
+'Laisser reposer 30 minutes au frais si possible. Rectifier l’assaisonnement avant de servir, avec du basilic frais.'],
+'Taboulé':[
+'Presser les citrons. Dans un grand saladier, mélanger la semoule fine avec le jus de citron, l’huile d’olive, du sel et un demi-verre d’eau. Couvrir et laisser gonfler 30 minutes en égrenant à la fourchette de temps en temps.',
+'Couper les tomates et le concombre en très petits dés, en retirant les graines du concombre.',
+'Hacher finement la menthe et le persil.',
+'Mélanger les légumes et les herbes à la semoule. Goûter : ajouter citron, huile ou sel selon le goût. La semoule doit être moelleuse, pas sèche.',
+'Laisser reposer au moins 1 heure au frais avant de servir. Meilleur le lendemain.'],
+'Salade niçoise':[
+'Cuire les œufs 9 minutes dans l’eau bouillante pour des œufs durs, les rafraîchir et les écaler.',
+'Équeuter les haricots verts, les cuire 8 minutes dans l’eau bouillante salée, les rafraîchir à l’eau froide.',
+'Laver la salade, couper les tomates en quartiers, les œufs en deux. Égoutter le thon.',
+'Préparer la vinaigrette : huile d’olive, un peu de vinaigre, sel, poivre, éventuellement une pointe d’ail écrasé.',
+'Disposer salade, tomates, haricots, thon émietté, œufs et olives dans un grand plat.',
+'Arroser de vinaigrette au dernier moment et servir.']
+};
 function catalogRecipe(c){
   const m=META[c[0]]||['','',''];const tags=c[4].filter(t=>t!=='persan');if(m[2])tags.push(m[2]);
   return {id:'c'+c[0].toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+$/,''),catalog:true,name:c[0],persons:c[1],minutes:c[2],cat:c[3],tags,cost:c[5],cuisine:m[0],protein:m[1],
-    ingredients:c[6].map(parseIng).filter(Boolean),steps:c[7].slice()};
+    ingredients:c[6].map(parseIng).filter(Boolean),steps:(STEPS[c[0]]||c[7]).slice()};
 }
 const PORK_WORDS=['porc','lardon','jambon','saucisse','chair à saucisse','bacon','chorizo'];
 function porkText(r){return r.ingredients.map(i=>norm(i.name)).join(' | ').replace(/jambon de (dinde|poulet|volaille)/g,'volaille')}
