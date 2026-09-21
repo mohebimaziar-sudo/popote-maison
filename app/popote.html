@@ -44,6 +44,8 @@ h3{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
 .slot .name.empty{color:var(--muted)}
 .slot .pers{font-size:12px;color:var(--accent-text);background:var(--accent-soft);border-radius:999px;padding:2px 8px;flex:none;font-variant-numeric:tabular-nums}
 .slot .fz{font-size:12px;color:var(--muted);flex:none}
+.slot.cooked .name{color:var(--muted)}
+.slot.cooked .fz{color:var(--accent-text)}
 .btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:500;white-space:nowrap}
 .btn:hover{background:var(--surface-2)}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
@@ -137,6 +139,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
   <button class="tab" data-tab="recipes" id="tab-recipes"><svg viewBox="0 0 24 24"><path d="M4 4h12a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z"/><path d="M4 17a3 3 0 0 1 3-3h12M8 8h7"/></svg>Recettes</button>
   <button class="tab" data-tab="list" id="tab-list"><svg viewBox="0 0 24 24"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg>Courses</button>
   <button class="tab" data-tab="prices" id="tab-prices"><svg viewBox="0 0 24 24"><path d="M4 18l5-6 4 3 7-8"/><path d="M15 7h5v5"/></svg>Prix</button>
+  <button class="tab" data-tab="stock" id="tab-stock"><svg viewBox="0 0 24 24"><path d="M4 8l8-4 8 4v9l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v9"/></svg>Stock</button>
 </nav>
 
 <div id="sheet" hidden class="sheet"><div class="sheet-card" id="sheetBody" role="dialog" aria-modal="true"></div></div>
@@ -172,15 +175,17 @@ function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth
 /* Catalogue de départ : [nom, personnes, minutes, catégorie, étiquettes, coût indicatif € (pour le nombre de personnes), ingrédients, étapes] */
 const CATS_R=['Viande','Volaille','Poisson','Végétarien','Pâtes et riz','Soupe','Salade','Œufs et tartes','Mijoté'];
 const TAGS=['rapide','congélateur','végétarien','pas cher','enfants','four','persan'];
-const CATALOG_VERSION=2;
+const CATALOG_VERSION=3;
+/* version 3 : plus de porc dans le catalogue. Anciens noms remplacés, plats de porc retirés. */
+const RENAMED={'Riz cantonais':'Riz cantonais au poulet','Gratin de pâtes au jambon':'Gratin de pâtes au poulet','Côtes de porc et pommes sautées':'Escalopes de poulet et pommes sautées','Sauté de porc au caramel':'Sauté de poulet au caramel','Rôti de porc aux carottes':'Rôti de dinde aux carottes','Quiche lorraine':'Quiche aux poireaux','Crêpes salées jambon fromage':'Crêpes salées dinde fromage','Croque-monsieur et salade':'Croque-monsieur à la dinde et salade'};
 const CATALOG=[
 ['Pâtes au pesto',4,20,'Pâtes et riz',['végétarien','enfants'],6,['400 g pâtes','1 pot pesto','50 g parmesan','30 g pignons'],['Cuire les pâtes al dente.','Mélanger avec le pesto hors du feu.','Servir avec le parmesan et les pignons.']],
 ['Pâtes au thon et tomates',4,20,'Pâtes et riz',['enfants'],7,['400 g pâtes','2 boîte thon','1 boîte tomates concassées','1 oignon','2 cs huile d’olive','1 gousse ail'],['Faire revenir l’oignon et l’ail.','Ajouter les tomates, laisser réduire 10 min, puis le thon.','Mélanger aux pâtes cuites.']],
 ['Spaghettis bolognaise',8,60,'Mijoté',['congélateur','enfants'],16,['800 g bœuf haché','2 oignons','2 carottes','2 gousse ail','2 boîte tomates concassées','1 cs concentré de tomate','800 g spaghetti','2 cs huile d’olive'],['Faire revenir oignons, carottes râpées et ail.','Ajouter la viande, puis tomates et concentré. Mijoter 40 min.','La moitié de la sauce au congélateur, le reste avec les spaghettis.']],
 ['Lasagnes',6,80,'Mijoté',['congélateur','enfants','four'],15,['600 g bœuf haché','2 boîte tomates concassées','1 oignon','12 feuilles de lasagne','50 cl lait','40 g beurre','40 g farine','150 g gruyère râpé'],['Préparer une sauce tomate à la viande.','Préparer une béchamel avec beurre, farine, lait.','Monter en couches, gruyère dessus, 35 min au four à 180°.']],
-['Riz cantonais',4,25,'Pâtes et riz',['enfants'],7,['300 g riz','150 g petits pois','150 g jambon','3 œuf','2 cs sauce soja','1 oignon','2 cs huile'],['Cuire le riz et le laisser refroidir.','Faire une omelette fine, la couper en lamelles.','Tout faire sauter ensemble avec la sauce soja.']],
+['Riz cantonais au poulet',4,25,'Pâtes et riz',['enfants'],8,['300 g riz','150 g petits pois','200 g blanc de poulet','3 œuf','2 cs sauce soja','1 oignon','2 cs huile'],['Cuire le riz et le laisser refroidir.','Faire sauter le poulet en dés, puis une omelette fine coupée en lamelles.','Tout faire sauter ensemble avec la sauce soja.']],
 ['Risotto aux champignons',4,40,'Pâtes et riz',['végétarien'],9,['300 g riz arborio','400 g champignons','1 oignon','1 l bouillon de légumes','60 g parmesan','20 g beurre','2 cs huile d’olive'],['Faire revenir oignon et champignons.','Ajouter le riz, puis le bouillon louche par louche, 18 min.','Terminer avec beurre et parmesan.']],
-['Gratin de pâtes au jambon',6,40,'Pâtes et riz',['enfants','four','congélateur'],9,['500 g pâtes','200 g jambon','50 cl lait','40 g beurre','40 g farine','150 g gruyère râpé'],['Cuire les pâtes.','Préparer une béchamel, mélanger avec pâtes et jambon en dés.','Gruyère dessus, 20 min au four à 200°.']],
+['Gratin de pâtes au poulet',6,40,'Pâtes et riz',['enfants','four','congélateur'],10,['500 g pâtes','250 g blanc de poulet','50 cl lait','40 g beurre','40 g farine','150 g gruyère râpé'],['Cuire les pâtes, faire dorer le poulet en dés.','Préparer une béchamel, mélanger avec pâtes et poulet.','Gruyère dessus, 20 min au four à 200°.']],
 ['Poulet rôti et pommes de terre',4,75,'Volaille',['enfants','four'],14,['1 poulet','1 kg pommes de terre','3 gousse ail','2 cs huile d’olive','1 branche thym'],['Frotter le poulet d’huile, sel, thym.','Entourer de pommes de terre et d’ail.','1 h 15 au four à 200°, en arrosant.']],
 ['Poulet au curry et riz',4,35,'Volaille',['enfants','congélateur'],12,['600 g blanc de poulet','300 g riz basmati','1 oignon','20 cl lait de coco','2 cs curry','2 cs huile'],['Faire dorer le poulet en morceaux avec l’oignon.','Ajouter le curry, le lait de coco, mijoter 15 min.','Servir avec le riz.']],
 ['Poulet basquaise',4,60,'Volaille',['congélateur'],13,['4 cuisses de poulet','3 poivrons','1 boîte tomates concassées','2 oignons','2 gousse ail','300 g riz','2 cs huile d’olive'],['Faire dorer les cuisses.','Ajouter oignons, poivrons, ail, tomates. Mijoter 40 min.','Servir avec le riz.']],
@@ -190,14 +195,14 @@ const CATALOG=[
 ['Zereshk polo ba morgh',6,90,'Volaille',['persan'],18,['6 cuisses de poulet','500 g riz basmati','100 g épine-vinette (zereshk)','2 oignons','1 pincée safran','60 g beurre','2 cs sucre'],['Cuire le poulet avec les oignons et le safran, 45 min.','Cuire le riz à l’iranienne (rincé, bouilli, puis à l’étouffée).','Faire revenir les zereshk au beurre avec le sucre, parsemer sur le riz.']],
 ['Chili con carne',8,60,'Mijoté',['congélateur'],18,['1 kg bœuf haché','2 boîte haricots rouges','2 boîte tomates concassées','2 oignons','2 poivrons','2 gousse ail','1 cs cumin','1 cs paprika','600 g riz'],['Faire revenir oignons, ail et poivrons.','Ajouter la viande, puis tomates, haricots et épices.','Mijoter 40 min. Répartir en boîtes : la moitié au congélateur.']],
 ['Hachis parmentier',6,60,'Viande',['congélateur','enfants','four'],14,['600 g bœuf haché','1.5 kg pommes de terre','2 oignons','20 cl lait','40 g beurre','100 g gruyère râpé'],['Préparer une purée.','Faire revenir la viande avec les oignons.','Viande dessous, purée dessus, gruyère, 25 min au four à 200°.']],
-['Bœuf bourguignon',6,180,'Mijoté',['congélateur'],24,['1.2 kg bœuf à mijoter','200 g lardons','3 carottes','2 oignons','75 cl vin rouge','250 g champignons','2 cs farine','1 bouquet garni'],['Faire dorer la viande et les lardons, saupoudrer de farine.','Ajouter légumes, vin, bouquet garni. Mijoter 2 h 30.','Ajouter les champignons 20 min avant la fin.']],
+['Bœuf bourguignon',6,180,'Mijoté',['congélateur'],22,['1.2 kg bœuf à mijoter','3 carottes','2 oignons','75 cl vin rouge','250 g champignons','2 cs farine','1 bouquet garni'],['Faire dorer la viande, saupoudrer de farine.','Ajouter légumes, vin, bouquet garni. Mijoter 2 h 30.','Ajouter les champignons 20 min avant la fin.']],
 ['Blanquette de veau',6,120,'Mijoté',['congélateur'],26,['1.2 kg veau à blanquette','3 carottes','2 oignons','250 g champignons','20 cl crème fraîche','40 g beurre','40 g farine','1 citron','500 g riz'],['Pocher la viande avec carottes et oignons 1 h 30.','Lier le bouillon avec beurre, farine et crème, un trait de citron.','Servir avec le riz.']],
 ['Boulettes de bœuf sauce tomate',4,40,'Viande',['congélateur','enfants'],12,['600 g bœuf haché','1 œuf','1 oignon','40 g chapelure','2 boîte tomates concassées','400 g pâtes','2 cs huile d’olive'],['Mélanger viande, œuf, oignon haché, chapelure. Former des boulettes.','Les dorer, puis mijoter 20 min dans la sauce tomate.','Servir avec les pâtes.']],
 ['Steak haché et haricots verts',4,20,'Viande',['enfants'],12,['4 steaks hachés','600 g haricots verts','20 g beurre','1 gousse ail'],['Cuire les haricots verts 10 min.','Saisir les steaks.','Faire sauter les haricots au beurre et à l’ail.']],
-['Côtes de porc et pommes sautées',4,30,'Viande',[],12,['4 côtes de porc','1 kg pommes de terre','2 cs huile','1 gousse ail','1 branche persil'],['Faire sauter les pommes de terre en dés 20 min.','Saisir les côtes de porc.','Ail et persil sur les pommes de terre.']],
-['Sauté de porc au caramel',4,40,'Viande',['congélateur'],13,['800 g sauté de porc','3 cs sucre','4 cs sauce soja','1 oignon','1 cc gingembre','300 g riz'],['Faire dorer le porc avec l’oignon.','Ajouter sucre, soja, gingembre et un fond d’eau. Mijoter 25 min.','Servir avec le riz.']],
-['Rôti de porc aux carottes',6,90,'Viande',['four','congélateur'],16,['1.2 kg rôti de porc','1 kg carottes','2 oignons','2 gousse ail','1 branche thym','2 cs huile'],['Dorer le rôti de tous les côtés.','Entourer de carottes, oignons, ail, thym.','1 h 15 au four à 180°.']],
-['Tomates farcies',4,60,'Viande',['four','congélateur'],12,['8 tomates','500 g chair à saucisse','1 oignon','1 gousse ail','1 branche persil','300 g riz'],['Creuser les tomates.','Mélanger chair, oignon, ail, persil. Farcir.','45 min au four à 180°, riz cuit dans le jus.']],
+['Escalopes de poulet et pommes sautées',4,30,'Volaille',[],11,['4 escalopes de poulet','1 kg pommes de terre','2 cs huile','1 gousse ail','1 branche persil'],['Faire sauter les pommes de terre en dés 20 min.','Saisir les escalopes.','Ail et persil sur les pommes de terre.']],
+['Sauté de poulet au caramel',4,40,'Volaille',['congélateur'],12,['800 g haut de cuisse de poulet','3 cs sucre','4 cs sauce soja','1 oignon','1 cc gingembre','300 g riz'],['Faire dorer le poulet avec l’oignon.','Ajouter sucre, soja, gingembre et un fond d’eau. Mijoter 25 min.','Servir avec le riz.']],
+['Rôti de dinde aux carottes',6,90,'Volaille',['four','congélateur'],17,['1.2 kg rôti de dinde','1 kg carottes','2 oignons','2 gousse ail','1 branche thym','2 cs huile'],['Dorer le rôti de tous les côtés.','Entourer de carottes, oignons, ail, thym.','1 h 15 au four à 180°.']],
+['Tomates farcies',4,60,'Viande',['four','congélateur'],13,['8 tomates','500 g bœuf haché','1 œuf','1 oignon','1 gousse ail','1 branche persil','300 g riz'],['Creuser les tomates.','Mélanger viande, œuf, oignon, ail, persil. Farcir.','45 min au four à 180°, riz cuit dans le jus.']],
 ['Khoresh gheymeh',6,120,'Mijoté',['persan','congélateur'],20,['800 g bœuf à mijoter','200 g pois cassés jaunes','2 oignons','2 cs concentré de tomate','3 citrons séchés (limou amani)','1 cc curcuma','500 g riz basmati','3 pommes de terre'],['Faire revenir oignons et viande avec le curcuma.','Ajouter concentré, pois cassés, citrons séchés, eau. Mijoter 1 h 30.','Servir avec le riz et des frites fines de pommes de terre dessus.']],
 ['Ghormeh sabzi',6,150,'Mijoté',['persan','congélateur'],20,['800 g bœuf à mijoter','2 bottes persil','1 botte coriandre','1 botte ciboulette','200 g haricots rouges','4 citrons séchés (limou amani)','2 oignons','1 cs fenugrec séché','500 g riz basmati'],['Faire revenir les herbes hachées longuement dans l’huile.','Ajouter viande dorée, oignons, haricots, citrons séchés, eau. Mijoter 2 h.','Servir avec le riz. Se congèle très bien.']],
 ['Saumon au four et riz',4,30,'Poisson',['four'],16,['4 pavés de saumon','300 g riz','1 citron','2 cs huile d’olive','1 branche aneth','400 g brocoli'],['Saumon au four 15 min à 200° avec citron et huile.','Cuire le riz et le brocoli à la vapeur.','Aneth au moment de servir.']],
@@ -212,12 +217,12 @@ const CATALOG=[
 ['Gratin de courgettes',4,45,'Végétarien',['végétarien','four'],7,['1 kg courgettes','3 œuf','20 cl crème fraîche','100 g gruyère râpé','1 gousse ail'],['Faire revenir les courgettes en rondelles.','Mélanger œufs, crème, gruyère, ail. Verser dessus.','30 min au four à 180°.']],
 ['Chou-fleur gratiné',4,45,'Végétarien',['végétarien','four'],7,['1 chou-fleur','50 cl lait','40 g beurre','40 g farine','100 g gruyère râpé','1 pincée muscade'],['Cuire le chou-fleur 12 min.','Béchamel, muscade.','Napper, gruyère, 20 min au four à 200°.']],
 ['Adas polo',6,60,'Pâtes et riz',['persan','végétarien','congélateur'],8,['500 g riz basmati','250 g lentilles vertes','2 oignons','100 g raisins secs','100 g dattes','1 cc cumin','1 pincée safran','60 g beurre'],['Cuire les lentilles 20 min.','Cuire le riz à l’iranienne, en couches avec les lentilles.','Faire revenir oignons, raisins et dattes au beurre, parsemer.']],
-['Quiche lorraine',4,45,'Œufs et tartes',['four','congélateur'],7,['1 pâte brisée','200 g lardons','3 œuf','20 cl crème fraîche','20 cl lait','100 g gruyère râpé'],['Foncer la pâte, répartir les lardons dorés.','Battre œufs, crème, lait, verser, gruyère.','35 min au four à 180°.']],
+['Quiche aux poireaux',4,50,'Œufs et tartes',['four','congélateur','végétarien'],7,['1 pâte brisée','3 poireaux','3 œuf','20 cl crème fraîche','20 cl lait','100 g gruyère râpé','20 g beurre'],['Faire fondre les poireaux émincés au beurre 15 min.','Foncer la pâte, répartir les poireaux, verser œufs, crème et lait battus, gruyère.','35 min au four à 180°.']],
 ['Omelette aux champignons',4,15,'Œufs et tartes',['végétarien'],5,['8 œuf','300 g champignons','1 branche persil','20 g beurre','1 salade verte'],['Faire sauter les champignons.','Verser les œufs battus, cuire 5 min.','Servir avec la salade.']],
 ['Kuku sabzi',4,40,'Œufs et tartes',['persan','végétarien'],7,['6 œuf','2 bottes persil','1 botte coriandre','1 botte ciboulette','50 g noix','2 cs farine','1 cc curcuma','3 cs huile'],['Hacher finement les herbes.','Mélanger avec œufs, farine, curcuma, noix.','Cuire à la poêle couverte 15 min de chaque côté, ou au four.']],
-['Crêpes salées jambon fromage',4,30,'Œufs et tartes',['enfants'],7,['250 g farine','3 œuf','50 cl lait','200 g jambon','150 g gruyère râpé','20 g beurre'],['Préparer la pâte à crêpes, laisser reposer.','Cuire les crêpes.','Garnir jambon et fromage, replier, réchauffer.']],
-['Pizza maison',4,40,'Œufs et tartes',['enfants','four'],8,['2 pâtes à pizza','1 boîte tomates concassées','2 boules mozzarella','200 g jambon','150 g champignons','1 branche origan'],['Étaler la sauce tomate sur les pâtes.','Garnir mozzarella, jambon, champignons, origan.','12 min au four à 240°.']],
-['Croque-monsieur et salade',4,15,'Œufs et tartes',['enfants'],7,['16 tranches pain de mie','8 tranches jambon','8 tranches emmental','40 g beurre','1 salade verte'],['Monter les croques, beurrer l’extérieur.','Dorer à la poêle ou au four.','Servir avec la salade.']],
+['Crêpes salées dinde fromage',4,30,'Œufs et tartes',['enfants'],8,['250 g farine','3 œuf','50 cl lait','200 g jambon de dinde','150 g gruyère râpé','20 g beurre'],['Préparer la pâte à crêpes, laisser reposer.','Cuire les crêpes.','Garnir jambon de dinde et fromage, replier, réchauffer.']],
+['Pizza maison',4,40,'Œufs et tartes',['enfants','four','végétarien'],8,['2 pâtes à pizza','1 boîte tomates concassées','2 boules mozzarella','2 poivrons','150 g champignons','1 branche origan'],['Étaler la sauce tomate sur les pâtes.','Garnir mozzarella, poivrons, champignons, origan.','12 min au four à 240°.']],
+['Croque-monsieur à la dinde et salade',4,15,'Œufs et tartes',['enfants'],8,['16 tranches pain de mie','8 tranches jambon de dinde','8 tranches emmental','40 g beurre','1 salade verte'],['Monter les croques, beurrer l’extérieur.','Dorer à la poêle ou au four.','Servir avec la salade.']],
 ['Soupe de légumes',6,40,'Soupe',['végétarien','congélateur'],6,['4 carottes','3 pommes de terre','2 poireaux','1 oignon','1 navet','1 cube bouillon'],['Légumes en morceaux, couvrir d’eau avec le bouillon.','Cuire 30 min, mixer.','Se congèle en portions.']],
 ['Velouté de potiron',6,40,'Soupe',['végétarien','congélateur'],6,['1.5 kg potiron','1 oignon','20 cl crème fraîche','1 cube bouillon','1 pincée muscade'],['Faire revenir l’oignon, ajouter le potiron en cubes.','Couvrir de bouillon, cuire 25 min, mixer.','Crème et muscade.']],
 ['Soupe de lentilles corail',4,30,'Soupe',['végétarien','congélateur'],5,['300 g lentilles corail','1 oignon','2 carottes','1 cc cumin','1 boîte tomates concassées','1 cube bouillon'],['Faire revenir oignon, carottes, cumin.','Ajouter lentilles, tomates, bouillon. Cuire 20 min.','Mixer grossièrement.']],
@@ -232,19 +237,19 @@ const CUISINES=['Française','Italienne','Persane','Asiatique','Indienne','Maghr
 const PROTEINS=['Bœuf','Veau','Agneau','Volaille','Porc','Poisson','Œufs','Végétarien'];
 const META={
 'Pâtes au pesto':['Italienne','Végétarien',''],'Pâtes au thon et tomates':['Italienne','Poisson',''],'Spaghettis bolognaise':['Italienne','Bœuf',''],'Lasagnes':['Italienne','Bœuf','hiver'],
-'Riz cantonais':['Asiatique','Porc',''],'Risotto aux champignons':['Italienne','Végétarien','hiver'],'Gratin de pâtes au jambon':['Française','Porc','hiver'],
+'Riz cantonais au poulet':['Asiatique','Volaille',''],'Risotto aux champignons':['Italienne','Végétarien','hiver'],'Gratin de pâtes au poulet':['Française','Volaille','hiver'],
 'Poulet rôti et pommes de terre':['Française','Volaille',''],'Poulet au curry et riz':['Indienne','Volaille',''],'Poulet basquaise':['Française','Volaille','été'],
 'Escalopes de dinde à la crème':['Française','Volaille',''],'Tajine de poulet aux olives et citron':['Maghreb','Volaille',''],'Poulet riz au safran':['Persane','Volaille',''],
 'Zereshk polo ba morgh':['Persane','Volaille',''],'Chili con carne':['Mexicaine','Bœuf','hiver'],'Hachis parmentier':['Française','Bœuf','hiver'],
 'Bœuf bourguignon':['Française','Bœuf','hiver'],'Blanquette de veau':['Française','Veau','hiver'],'Boulettes de bœuf sauce tomate':['Italienne','Bœuf',''],
-'Steak haché et haricots verts':['Française','Bœuf',''],'Côtes de porc et pommes sautées':['Française','Porc',''],'Sauté de porc au caramel':['Asiatique','Porc',''],
-'Rôti de porc aux carottes':['Française','Porc','hiver'],'Tomates farcies':['Française','Porc','été'],'Khoresh gheymeh':['Persane','Bœuf','hiver'],
+'Steak haché et haricots verts':['Française','Bœuf',''],'Escalopes de poulet et pommes sautées':['Française','Volaille',''],'Sauté de poulet au caramel':['Asiatique','Volaille',''],
+'Rôti de dinde aux carottes':['Française','Volaille','hiver'],'Tomates farcies':['Française','Bœuf','été'],'Khoresh gheymeh':['Persane','Bœuf','hiver'],
 'Ghormeh sabzi':['Persane','Bœuf','hiver'],'Saumon au four et riz':['Française','Poisson',''],'Cabillaud et purée maison':['Française','Poisson',''],
 'Poisson pané et épinards':['Française','Poisson',''],'Papillotes de poisson aux légumes':['Française','Poisson','été'],'Gratin dauphinois':['Française','Végétarien','hiver'],
 'Ratatouille':['Française','Végétarien','été'],'Curry de lentilles (dahl)':['Indienne','Végétarien',''],'Wok de légumes et nouilles':['Asiatique','Végétarien',''],
 'Galettes de pommes de terre':['Française','Végétarien',''],'Gratin de courgettes':['Française','Végétarien','été'],'Chou-fleur gratiné':['Française','Végétarien','hiver'],
-'Adas polo':['Persane','Végétarien',''],'Quiche lorraine':['Française','Porc',''],'Omelette aux champignons':['Française','Œufs',''],'Kuku sabzi':['Persane','Œufs',''],
-'Crêpes salées jambon fromage':['Française','Porc',''],'Pizza maison':['Italienne','Porc',''],'Croque-monsieur et salade':['Française','Porc',''],
+'Adas polo':['Persane','Végétarien',''],'Quiche aux poireaux':['Française','Végétarien','hiver'],'Omelette aux champignons':['Française','Œufs',''],'Kuku sabzi':['Persane','Œufs',''],
+'Crêpes salées dinde fromage':['Française','Volaille',''],'Pizza maison':['Italienne','Végétarien',''],'Croque-monsieur à la dinde et salade':['Française','Volaille',''],
 'Soupe de légumes':['Française','Végétarien','hiver'],'Velouté de potiron':['Française','Végétarien','hiver'],'Soupe de lentilles corail':['Orientale','Végétarien','hiver'],
 'Couscous poulet merguez':['Maghreb','Volaille',''],'Salade César au poulet':['Américaine','Volaille','été'],'Salade de pâtes':['Italienne','Végétarien','été'],
 'Taboulé':['Orientale','Végétarien','été'],'Salade niçoise':['Française','Poisson','été']};
@@ -254,8 +259,9 @@ function catalogRecipe(c){
     ingredients:c[6].map(parseIng).filter(Boolean),steps:c[7].slice()};
 }
 const PORK_WORDS=['porc','lardon','jambon','saucisse','chair à saucisse','bacon','chorizo'];
+function porkText(r){return r.ingredients.map(i=>norm(i.name)).join(' | ').replace(/jambon de (dinde|poulet|volaille)/g,'volaille')}
 function guessProtein(r){
-  const n=r.ingredients.map(i=>norm(i.name)).join(' | ');
+  const n=porkText(r);
   if(PORK_WORDS.some(w=>n.includes(w)))return 'Porc';
   if(/agneau|mouton|merguez/.test(n))return 'Agneau';
   if(/veau/.test(n))return 'Veau';
@@ -265,7 +271,7 @@ function guessProtein(r){
   if(/œuf|oeuf/.test(n))return 'Œufs';
   return 'Végétarien';
 }
-function hasPork(r){const n=r.ingredients.map(i=>norm(i.name)).join(' | ');return r.protein==='Porc'||PORK_WORDS.some(w=>n.includes(w))}
+function hasPork(r){const n=porkText(r);return r.protein==='Porc'||PORK_WORDS.some(w=>n.includes(w))}
 function seed(){
   return {settings:{persons:4,catalogVersion:CATALOG_VERSION},recipes:CATALOG.map(catalogRecipe),weeks:{},lists:{},prices:[]};
 }
@@ -280,6 +286,15 @@ function importCatalog(s){
     return false;
   });
   Object.values(s.weeks||{}).forEach(w=>Object.values(w.slots||{}).forEach(sl=>{if(sl&&remap[sl.recipeId])sl.recipeId=remap[sl.recipeId]}));
+  /* les plats du catalogue non modifiés par l'utilisateur sont resynchronisés avec la version courante (noms, ingrédients, sans porc) */
+  const idMap={};
+  s.recipes.forEach(r=>{
+    if(!r.catalog)return;
+    const newName=RENAMED[r.name]||r.name;const c=CATALOG.find(x=>x[0]===newName);
+    if(c){const fresh=catalogRecipe(c);idMap[r.id]=fresh.id;Object.assign(r,fresh)}else r._drop=true;
+  });
+  s.recipes=s.recipes.filter(r=>!r._drop);
+  Object.values(s.weeks||{}).forEach(w=>Object.keys(w.slots||{}).forEach(k=>{const sl=w.slots[k];if(!sl||!sl.recipeId)return;if(idMap[sl.recipeId])sl.recipeId=idMap[sl.recipeId];else if(!s.recipes.find(r=>r.id===sl.recipeId))delete w.slots[k]}));
   const have=new Set(s.recipes.map(r=>matchKey(r.name)));
   CATALOG.forEach(c=>{if(!have.has(matchKey(c[0])))s.recipes.push(catalogRecipe(c))});
   /* version 2 : pays, protéine et saison sur les plats du catalogue déjà présents, sans toucher aux modifications de l'utilisateur */
@@ -293,7 +308,7 @@ function importCatalog(s){
   s.settings.catalogVersion=CATALOG_VERSION;
 }
 let S=load();
-function load(){let s=null;try{const raw=localStorage.getItem(KEY);if(raw){const p=JSON.parse(raw);if(p&&p.recipes)s=p}}catch(e){}if(!s)s=seed();if(!s.extras)s.extras=[];if(!s.prices)s.prices=[];if(!s.lists)s.lists={};if(!s.weeks)s.weeks={};if(!s.receipts)s.receipts=[];if(!s.settings)s.settings={persons:4};if((s.settings.catalogVersion||0)<CATALOG_VERSION)importCatalog(s);return s}
+function load(){let s=null;try{const raw=localStorage.getItem(KEY);if(raw){const p=JSON.parse(raw);if(p&&p.recipes)s=p}}catch(e){}if(!s)s=seed();if(!s.extras)s.extras=[];if(!s.prices)s.prices=[];if(!s.lists)s.lists={};if(!s.weeks)s.weeks={};if(!s.receipts)s.receipts=[];if(!s.stock)s.stock=[];if(!s.settings)s.settings={persons:4};if((s.settings.catalogVersion||0)<CATALOG_VERSION)importCatalog(s);return s}
 function autoTags(r){
   const t=new Set(r.tags||[]);
   if(r.minutes&&r.minutes<=25)t.add('rapide');
@@ -434,6 +449,7 @@ function render(){
   if(tab==='week')view.innerHTML=renderWeek();
   else if(tab==='recipes')view.innerHTML=renderRecipes();
   else if(tab==='list')view.innerHTML=renderList();
+  else if(tab==='stock')view.innerHTML=renderStock();
   else view.innerHTML=renderPrices();
   window.scrollTo(0,0);
 }
@@ -456,7 +472,7 @@ function renderWeek(){
     MEALS.forEach(([mk,ml])=>{
       const s=w.slots[i+'-'+mk];const r=s&&s.recipeId?recipeById(s.recipeId):null;
       const name=r?r.name:(s&&s.label?s.label:'');
-      h+=`<button class="slot" data-act="slot" data-slot="${i}-${mk}"><span class="meal">${ml}</span><span class="name${name?'':' empty'}">${name?esc(name):'+ choisir'}</span>${name&&s.persons?`<span class="pers">${s.persons} pers.</span>`:''}${s&&s.freeze?'<span class="fz" title="Une partie au congélateur">❄</span>':''}</button>`;
+      h+=`<button class="slot${s&&s.cooked?' cooked':''}" data-act="slot" data-slot="${i}-${mk}"><span class="meal">${ml}</span><span class="name${name?'':' empty'}">${s&&s.stockId?'❄ ':''}${name?esc(name):'+ choisir'}</span>${name&&s.persons?`<span class="pers">${s.persons} pers.</span>`:''}${s&&s.freeze&&!s.cooked?'<span class="fz" title="Une partie au congélateur">❄</span>':''}${s&&s.cooked?'<span class="fz" title="Cuisiné, stock mis à jour">✓</span>':''}</button>`;
     });
     h+='</div>';
   });
@@ -486,6 +502,7 @@ function openSuggest(){
     <label class="row" style="margin-top:10px;cursor:pointer;color:inherit;font-size:inherit"><input type="checkbox" id="s-veg" style="width:auto" checked> <span>Au moins un repas végétarien</span></label>
     <label class="row" style="margin-top:10px;cursor:pointer;color:inherit;font-size:inherit"><input type="checkbox" id="s-season" style="width:auto" checked> <span>Privilégier les plats de saison (${seasonLabel()})</span></label>
     ${activeCount()?`<label class="row" style="margin-top:10px;cursor:pointer;color:inherit;font-size:inherit"><input type="checkbox" id="s-usefilters" style="width:auto" checked> <span>Seulement les plats du filtre actuel du carnet (${filterRecipes().length} plats)</span></label>`:'<input type="checkbox" id="s-usefilters" hidden>'}
+    ${frozenDishes().length?`<label class="row" style="margin-top:10px;cursor:pointer;color:inherit;font-size:inherit"><input type="checkbox" id="s-frozen" style="width:auto" checked> <span>D’abord les plats du congélateur (${frozenDishes().map(d=>esc(d.name)+' · '+trim(d.qty)+' port.').join(', ')})</span></label>`:'<input type="checkbox" id="s-frozen" hidden>'}
     <div class="actions"><button class="btn" data-act="close">Annuler</button><button class="btn primary" data-act="suggest-go">Proposer</button></div>`);
 }
 function suggestWeek(){
@@ -494,8 +511,18 @@ function suggestWeek(){
   const budget=parseFloat(String(document.getElementById('s-budget').value).replace(',','.'))||0;
   const keep=document.getElementById('s-keep').checked;const preferFreeze=document.getElementById('s-freeze').checked;const wantVeg=document.getElementById('s-veg').checked;const wantSeason=document.getElementById('s-season').checked;
   const keys=[];DAYS.forEach((d,i)=>{if(meals!=='dinner')keys.push(i+'-lunch');if(meals!=='lunch')keys.push(i+'-dinner')});
-  const targets=keys.filter(k=>!keep||!w.slots[k]||!(w.slots[k].recipeId||w.slots[k].label));
+  let targets=keys.filter(k=>!keep||!w.slots[k]||!(w.slots[k].recipeId||w.slots[k].label));
   if(!targets.length){toast('Tous ces repas sont déjà prévus');return}
+  /* les plats déjà cuisinés au congélateur passent en premier : ils sont déjà payés */
+  let fromFreezer=0;
+  if(document.getElementById('s-frozen').checked){
+    const planned=new Set(Object.values(w.slots).filter(s=>s&&s.stockId).map(s=>s.stockId));
+    frozenDishes().filter(d=>!planned.has(d.id)).forEach(d=>{
+      if(!targets.length)return;const k=targets.shift();
+      w.slots[k]={recipeId:'',label:d.name+' (congélateur)',persons:Math.min(persons,Math.round(d.qty)||persons),freeze:false,stockId:d.id};fromFreezer++;
+    });
+    if(!targets.length){S.settings.persons=persons;save();closeSheet();render();toast(fromFreezer+' repas pris dans le congélateur');return}
+  }
   const used=new Set(Object.values(w.slots).filter(s=>s&&s.recipeId).map(s=>s.recipeId));
   const useF=document.getElementById('s-usefilters').checked&&activeCount()>0;
   const base=useF?S.recipes.filter(r=>matchesFilters(r,F)):S.recipes;
@@ -529,7 +556,7 @@ function suggestWeek(){
   });
   S.settings.persons=persons;save();closeSheet();render();
   const wc=weekCost(w);
-  toast(targets.length+' repas proposés'+(wc.total>0?' · ≈ '+eur(wc.total)+(budget>0?' pour '+eur(budget)+' demandés':''):''));
+  toast(targets.length+' repas proposés'+(fromFreezer?' + '+fromFreezer+' du congélateur':'')+(wc.total>0?' · ≈ '+eur(wc.total)+(budget>0?' pour '+eur(budget)+' demandés':''):''));
 }
 function openSlot(key){
   const w=week();const s=w.slots[key]||{recipeId:'',label:'',persons:S.settings.persons,freeze:false};
@@ -542,7 +569,9 @@ function openSlot(key){
     <label for="f-persons">Nombre de personnes</label>
     <input type="number" id="f-persons" min="1" max="30" step="1" value="${s.persons||S.settings.persons}">
     <label class="row" style="margin-top:14px;cursor:pointer"><input type="checkbox" id="f-freeze" style="width:auto"${s.freeze?' checked':''}> <span>Une partie au congélateur</span></label>
-    <div class="actions"><button class="btn" data-act="close">Annuler</button>${(s.recipeId||s.label)?'<button class="btn danger" data-act="slot-clear" data-slot="'+key+'">Vider</button>':''}<button class="btn primary" data-act="slot-save" data-slot="${key}">Enregistrer</button></div>`);
+    ${s.stockId?`<p class="note">Plat pris dans le congélateur. « Cuisiné » retirera les portions du stock.</p>`:''}
+    ${s.cooked?`<p class="note">✓ Marqué cuisiné : les ingrédients ont été retirés du stock.</p>`:''}
+    <div class="actions"><button class="btn" data-act="close">Annuler</button>${(s.recipeId||s.label)?'<button class="btn danger" data-act="slot-clear" data-slot="'+key+'">Vider</button>':''}${(s.recipeId||s.stockId)&&!s.cooked?'<button class="btn" data-act="slot-cook" data-slot="'+key+'">Cuisiné</button>':''}<button class="btn primary" data-act="slot-save" data-slot="${key}">Enregistrer</button></div>`);
   const sel=document.getElementById('f-recipe');
   sel.addEventListener('change',()=>{document.getElementById('freeWrap').hidden=sel.value!=='__free'});
 }
@@ -550,10 +579,104 @@ function saveSlot(key){
   const w=week();const v=document.getElementById('f-recipe').value;
   const persons=Math.max(1,parseInt(document.getElementById('f-persons').value,10)||S.settings.persons);
   const freeze=document.getElementById('f-freeze').checked;
+  const old=w.slots[key]||{};
   if(!v){delete w.slots[key]}
-  else if(v==='__free'){const label=document.getElementById('f-label').value.trim()||'Autre';w.slots[key]={recipeId:'',label,persons,freeze}}
-  else w.slots[key]={recipeId:v,label:'',persons,freeze};
+  else if(v==='__free'){const label=document.getElementById('f-label').value.trim()||'Autre';w.slots[key]={recipeId:'',label,persons,freeze,stockId:old.stockId,cooked:old.cooked}}
+  else w.slots[key]={recipeId:v,label:'',persons,freeze,cooked:old.recipeId===v?old.cooked:false};
   S.settings.persons=persons;save();closeSheet();render();
+}
+
+/* ---------- stock ---------- */
+const LOCS=[['frigo','Frigo'],['congélateur','Congélateur'],['placard','Placard']];
+function guessLoc(cat){if(cat==='Surgelés')return 'congélateur';if(['Fruits et légumes','Viande et poisson','Crèmerie et œufs','Pain'].includes(cat))return 'frigo';return 'placard'}
+function stockFind(name,f){const k=matchKey(name);return S.stock.find(x=>x.kind!=='plat'&&matchKey(x.name)===k&&x.fam===f)}
+function stockAdd(name,qtyBase,f,cat,loc){
+  if(!(qtyBase>0))return;
+  let x=stockFind(name,f);
+  if(x){x.qty=Math.round((x.qty+qtyBase)*100)/100;x.updated=today()}
+  else{cat=cat||catOf(name);S.stock.push({id:uid(),kind:'ingredient',name,qty:Math.round(qtyBase*100)/100,fam:f,cat,loc:loc||guessLoc(cat),exp:null,updated:today()})}
+}
+function stockTake(name,qtyBase,f){
+  const x=stockFind(name,f);if(!x)return 0;
+  const t=Math.min(x.qty,qtyBase);x.qty=Math.round((x.qty-t)*100)/100;
+  if(x.qty<=0.001)S.stock=S.stock.filter(y=>y!==x);else x.updated=today();
+  return t;
+}
+function frozenDishes(){return S.stock.filter(x=>x.kind==='plat'&&x.qty>0)}
+function openCook(key){
+  const w=week();const s=w.slots[key];if(!s)return;
+  if(s.stockId){
+    const d=S.stock.find(x=>x.id===s.stockId);
+    sheet(`<h2>Cuisiné</h2><p class="sub">${d?esc(d.name)+' : '+trim(d.qty)+' portion'+(d.qty>1?'s':'')+' au congélateur.':'Ce plat n’est plus dans le stock.'}</p>
+      <label for="k-portions">Portions sorties du congélateur</label><input type="number" id="k-portions" min="0" step="1" value="${Math.min(s.persons||1,d?d.qty:0)}">
+      <div class="actions"><button class="btn" data-act="close">Annuler</button><button class="btn primary" data-act="cook-confirm" data-slot="${key}">Confirmer</button></div>`);
+    return;
+  }
+  const r=recipeById(s.recipeId);if(!r)return;
+  const factor=(s.persons||r.persons)/r.persons;
+  const rows=r.ingredients.map(i=>{const f=fam(i.unit);const need=toBase(i.qty,i.unit)*factor;const st=stockFind(i.name,f);
+    return `<div class="ing"><span>${esc(i.name)}</span><span>${esc(fmtQty(need,f))}${st?' <span style="color:var(--accent-text)">· en stock '+esc(fmtQty(st.qty,f))+'</span>':' <span style="color:var(--muted)">· pas en stock</span>'}</span></div>`}).join('');
+  const defPortions=s.freeze?Math.max(0,Math.round((s.persons||r.persons)-S.settings.persons)):0;
+  sheet(`<h2>Cuisiné : ${esc(r.name)}</h2><p class="sub">Les quantités ci-dessous sortent du stock (seulement ce qui y est).</p><div>${rows}</div>
+    <label for="k-portions">Portions mises au congélateur</label><input type="number" id="k-portions" min="0" step="1" value="${defPortions}">
+    <p class="note">Les portions congelées deviennent un plat prêt dans le stock, que « Proposer une semaine » utilisera en priorité.</p>
+    <div class="actions"><button class="btn" data-act="close">Annuler</button><button class="btn primary" data-act="cook-confirm" data-slot="${key}">Confirmer</button></div>`);
+}
+function confirmCook(key){
+  const w=week();const s=w.slots[key];if(!s)return;
+  const portions=Math.max(0,parseInt(document.getElementById('k-portions').value,10)||0);
+  if(s.stockId){
+    const d=S.stock.find(x=>x.id===s.stockId);
+    if(d){d.qty=Math.round((d.qty-portions)*100)/100;if(d.qty<=0)S.stock=S.stock.filter(x=>x!==d);else d.updated=today()}
+    s.cooked=true;save();closeSheet();render();toast('Congélateur mis à jour');return;
+  }
+  const r=recipeById(s.recipeId);if(!r)return;
+  const factor=(s.persons||r.persons)/r.persons;let taken=0;
+  r.ingredients.forEach(i=>{const f=fam(i.unit);if(stockTake(i.name,toBase(i.qty,i.unit)*factor,f)>0)taken++});
+  if(portions>0){
+    const ex=S.stock.find(x=>x.kind==='plat'&&x.recipeId===r.id);
+    if(ex){ex.qty+=portions;ex.updated=today()}else S.stock.push({id:uid(),kind:'plat',name:r.name,recipeId:r.id,qty:portions,fam:'portion',cat:'Plats préparés',loc:'congélateur',exp:null,updated:today()});
+  }
+  s.cooked=true;save();closeSheet();render();
+  toast(taken+' ingrédient'+(taken>1?'s':'')+' retiré'+(taken>1?'s':'')+' du stock'+(portions?' · '+portions+' portion'+(portions>1?'s':'')+' au congélateur':''));
+}
+function renderStock(){
+  const soon=addDays(new Date(),3);const soonIso=iso(soon);const t=today();
+  const expiring=S.stock.filter(x=>x.exp&&x.exp<=soonIso);
+  let h=`<div class="row between" style="margin-top:6px"><div><h2>Stock de la maison</h2><p class="sub">${S.stock.length} article${S.stock.length>1?'s':''}</p></div><button class="btn primary" data-act="stock-new">+ Ajouter</button></div>`;
+  h+=`<p class="note">Le stock se remplit quand tu coches un article au magasin ou enregistres un ticket, et se vide quand tu marques un repas « Cuisiné ». Corrige ici ce qui a bougé sans l’app.</p>`;
+  if(expiring.length)h+=`<div class="card" style="margin-top:12px;border-color:var(--warn)"><div style="padding:10px 14px"><b style="color:var(--warn)">À consommer vite</b><p class="sub" style="margin:0">${expiring.map(x=>esc(x.name)+(x.exp<t?' (dépassé)':'')).join(', ')}</p></div></div>`;
+  if(!S.stock.length)return h+`<div class="card" style="margin-top:14px"><div class="empty"><b>Le stock est vide</b>Coche tes prochaines courses au magasin, ou ajoute à la main ce que tu as déjà.</div></div>`;
+  const dishes=frozenDishes();
+  if(dishes.length){h+=`<h3>Plats prêts au congélateur</h3><div class="card">`+dishes.map(x=>`<div class="item"><div class="txt"><div>❄ ${esc(x.name)}</div><div class="q">${trim(x.qty)} portion${x.qty>1?'s':''} · ${esc(fmtDay.format(new Date(x.updated+'T12:00:00')))}</div></div><button class="btn small" data-act="stock-edit" data-id="${x.id}">Modifier</button></div>`).join('')+'</div>'}
+  LOCS.forEach(([loc,label])=>{
+    const its=S.stock.filter(x=>x.kind!=='plat'&&x.loc===loc).sort((a,b)=>a.name.localeCompare(b.name,'fr'));if(!its.length)return;
+    h+=`<h3>${label}</h3><div class="card">`+its.map(x=>`<div class="item"><div class="txt"><div>${esc(x.name)}</div><div class="q">${esc(fmtQty(x.qty,x.fam))}${x.exp?' · <span style="color:'+(x.exp<=soonIso?'var(--warn)':'inherit')+'">jusqu’au '+esc(fmtDay.format(new Date(x.exp+'T12:00:00')))+'</span>':''}</div></div><button class="btn small" data-act="stock-edit" data-id="${x.id}">Modifier</button></div>`).join('')+'</div>';
+  });
+  return h;
+}
+function editStock(id){
+  const x=id?S.stock.find(s=>s.id===id):null;
+  const isDish=x&&x.kind==='plat';
+  sheet(`<h2>${x?'Modifier':'Ajouter au stock'}</h2>
+    ${isDish?`<p class="sub">${esc(x.name)}, plat prêt</p>`:`<label for="st-name">Article</label><input type="text" id="st-name" value="${x?esc(x.name):''}" placeholder="riz basmati" list="p-names"><datalist id="p-names">${productNames().map(n=>`<option value="${esc(n)}">`).join('')}</datalist>`}
+    <div class="grid2"><div><label for="st-qty">${isDish?'Portions':'Quantité'}</label><input type="number" id="st-qty" min="0" step="any" inputmode="decimal" value="${x?(isDish?x.qty:(x.fam==='g'&&x.qty>=1000?x.qty/1000:x.fam==='ml'&&x.qty>=1000?x.qty/1000:x.qty)):1}"></div>
+    <div>${isDish?'':`<label for="st-unit">Unité</label><select id="st-unit">${PRICE_UNITS.map(u=>{const sel=x?((x.fam==='g'&&x.qty>=1000)?'kg':(x.fam==='ml'&&x.qty>=1000)?'l':x.fam==='g'?'g':x.fam==='ml'?'ml':x.fam):'pièce';return `<option${u===sel?' selected':''}>${u}</option>`}).join('')}</select>`}</div></div>
+    <div class="grid2"><div><label for="st-loc">Où</label><select id="st-loc">${LOCS.map(([v,l])=>`<option value="${v}"${x&&x.loc===v?' selected':''}>${l}</option>`).join('')}</select></div><div><label for="st-exp">À consommer avant (facultatif)</label><input type="date" id="st-exp" value="${x&&x.exp?x.exp:''}"></div></div>
+    <div class="actions"><button class="btn" data-act="close">Annuler</button>${x?`<button class="btn danger" data-act="stock-delete" data-id="${x.id}">Retirer</button>`:''}<button class="btn primary" data-act="stock-save" data-id="${x?x.id:''}">Enregistrer</button></div>`);
+}
+function saveStock(id){
+  const x=id?S.stock.find(s=>s.id===id):null;
+  const qty=parseFloat(String(document.getElementById('st-qty').value).replace(',','.'));
+  const loc=document.getElementById('st-loc').value;const exp=document.getElementById('st-exp').value||null;
+  if(x&&x.kind==='plat'){if(!(qty>0)){S.stock=S.stock.filter(s=>s!==x)}else{x.qty=qty;x.loc=loc;x.exp=exp;x.updated=today()}save();closeSheet();render();return}
+  const name=document.getElementById('st-name').value.trim();const unit=document.getElementById('st-unit').value;
+  if(!name){toast('Indique l’article');return}
+  if(!(qty>0)){if(x)S.stock=S.stock.filter(s=>s!==x);save();closeSheet();render();return}
+  const f=fam(unit);const base=toBase(qty,unit);
+  if(x){Object.assign(x,{name,qty:base,fam:f,loc,exp,updated:today()})}
+  else{const ex=stockFind(name,f);if(ex){ex.qty=base;ex.loc=loc;ex.exp=exp;ex.updated=today()}else S.stock.push({id:uid(),kind:'ingredient',name,qty:base,fam:f,cat:catOf(name),loc,exp,updated:today()})}
+  save();closeSheet();render();
 }
 
 /* ---------- recipes ---------- */
@@ -669,7 +792,7 @@ function saveRecipe(id){
   const cuisine=document.getElementById('r-cuisine').value;let protein=document.getElementById('r-protein').value;
   const costV=parseFloat(String(document.getElementById('r-cost').value).replace(',','.'));const cost=costV>0?costV:null;
   if(!protein)protein=guessProtein({ingredients});
-  if(id){const r=recipeById(id);Object.assign(r,{name,persons,minutes,ingredients,steps,cat,tags,cost,cuisine,protein});delete r.sample}
+  if(id){const r=recipeById(id);Object.assign(r,{name,persons,minutes,ingredients,steps,cat,tags,cost,cuisine,protein});delete r.sample;r.catalog=false}
   else S.recipes.push({id:uid(),name,persons,minutes,ingredients,steps,cat,tags,cost,cuisine,protein});
   save();closeSheet();render();toast('Recette enregistrée');
 }
@@ -696,10 +819,21 @@ function generateList(){
   });
   const prev=S.lists[weekKey()]||{items:[]};
   const keep={};prev.items.forEach(it=>keep[it.key]=it);
-  const items=Object.values(agg).map(a=>{const old=keep[a.key];return {key:a.key,name:a.name,unit:a.unit,fam:a.fam,qty:Math.round(a.qty*100)/100,cat:a.cat,status:old?old.status:'buy',manual:false}});
+  let inStock=0,partial=0;
+  const items=Object.values(agg).map(a=>{
+    const old=keep[a.key];let qty=Math.round(a.qty*100)/100;let status=old?old.status:'buy';let note='';
+    /* ce qui est déjà dans le stock ne se rachète pas */
+    const st=stockFind(a.name,a.fam);
+    if(st&&(!old||old.status!=='done')){
+      if(st.qty>=a.qty-0.001){status='have';note='en stock : '+fmtQty(st.qty,a.fam);inStock++}
+      else{qty=Math.round((a.qty-st.qty)*100)/100;note='il en reste '+fmtQty(st.qty,a.fam)+', il manque '+fmtQty(qty,a.fam);partial++;if(old&&old.status==='have'&&old.auto)status='buy'}
+    }else if(old&&old.auto&&old.status==='have'){status='buy'}
+    return {key:a.key,name:a.name,unit:a.unit,fam:a.fam,qty,need:Math.round(a.qty*100)/100,cat:a.cat,status,auto:status==='have'&&!!st,note,manual:false};
+  });
   prev.items.filter(it=>it.manual).forEach(it=>items.push(it));
   S.lists[weekKey()]={items,generated:today()};
-  save();tab='list';render();toast(items.length?'Liste générée : '+items.length+' articles':'Aucune recette au menu cette semaine');
+  save();tab='list';render();
+  toast(items.length?'Liste générée : '+items.length+' articles'+(inStock?' · '+inStock+' déjà en stock':'')+(partial?' · '+partial+' en partie':''):'Aucune recette au menu cette semaine');
 }
 function renderList(){
   const L=S.lists[weekKey()];
@@ -742,7 +876,7 @@ function priceSheet(name,unit,qty){
 }
 function itemRow(i){
   const p=latestPrice(i.name,null,i.fam);
-  return `<div class="item ${i.status}"><button class="chk" data-act="item-toggle" data-key="${esc(i.key)}" aria-label="${i.status==='done'?'Remettre à acheter':'Mettre dans le panier'}">${i.status==='done'?'✓':''}</button><div class="txt"><div>${esc(i.name)}</div><div class="q">${esc(fmtQty(i.qty,i.fam))}${p?' · dernier prix '+eur(p.price)+' / '+trim(p.qty)+' '+esc(p.unit)+' ('+esc(p.store)+')':''}</div></div><button class="btn small" data-act="item-have" data-key="${esc(i.key)}">${i.status==='have'?'À acheter':'J’ai déjà'}</button><button class="btn small icon" data-act="item-price" data-key="${esc(i.key)}" aria-label="Noter le prix" title="Noter le prix">€</button>${i.manual?`<button class="btn small icon" data-act="item-remove" data-key="${esc(i.key)}" aria-label="Retirer">×</button>`:''}</div>`;
+  return `<div class="item ${i.status}"><button class="chk" data-act="item-toggle" data-key="${esc(i.key)}" aria-label="${i.status==='done'?'Remettre à acheter':'Mettre dans le panier'}">${i.status==='done'?'✓':''}</button><div class="txt"><div>${esc(i.name)}</div><div class="q">${esc(fmtQty(i.qty,i.fam))}${i.note?' · '+esc(i.note):''}${p?' · dernier prix '+eur(p.price)+' / '+trim(p.qty)+' '+esc(p.unit)+' ('+esc(p.store)+')':''}</div></div><button class="btn small" data-act="item-have" data-key="${esc(i.key)}">${i.status==='have'?'À acheter':'J’ai déjà'}</button><button class="btn small icon" data-act="item-price" data-key="${esc(i.key)}" aria-label="Noter le prix" title="Noter le prix">€</button>${i.manual?`<button class="btn small icon" data-act="item-remove" data-key="${esc(i.key)}" aria-label="Retirer">×</button>`:''}</div>`;
 }
 function listItem(key){const L=S.lists[weekKey()];return L?L.items.find(i=>i.key===key):null}
 
@@ -889,7 +1023,7 @@ function saveTicket(){
     entries.push({id:uid(),product,store,price,qty,unit,date});
   });
   if(!entries.length){toast('Aucune ligne complète à enregistrer');return}
-  entries.forEach(e=>S.prices.push(e));
+  entries.forEach(e=>{S.prices.push(e);stockAdd(e.product,toBase(e.qty,e.unit),fam(e.unit))});
   let total=parseFloat(String(document.getElementById('t-total').value).replace(',','.'));
   if(!(total>0))total=entries.reduce((s,e)=>s+e.price,0);
   S.receipts.push({id:uid(),date,store,total:Math.round(total*100)/100,n:entries.length});
@@ -938,7 +1072,16 @@ document.addEventListener('click',e=>{
     case 'recipe-edit':editRecipe(el.dataset.id);break;
     case 'recipe-save':saveRecipe(el.dataset.id);break;
     case 'recipe-delete':deleteRecipe(el.dataset.id);break;
-    case 'item-toggle':{const it=listItem(el.dataset.key);if(it){it.status=it.status==='done'?'buy':'done';save();render()}break}
+    case 'item-toggle':{const it=listItem(el.dataset.key);if(it){
+      if(it.status==='done'){it.status='buy';stockTake(it.name,it.qty,it.fam)}
+      else{it.status='done';stockAdd(it.name,it.qty,it.fam,it.cat)}
+      save();render()}break}
+    case 'slot-cook':openCook(el.dataset.slot);break;
+    case 'cook-confirm':confirmCook(el.dataset.slot);break;
+    case 'stock-new':editStock('');break;
+    case 'stock-edit':editStock(el.dataset.id);break;
+    case 'stock-save':saveStock(el.dataset.id);break;
+    case 'stock-delete':S.stock=S.stock.filter(s=>s.id!==el.dataset.id);save();closeSheet();render();break;
     case 'item-have':{const it=listItem(el.dataset.key);if(it){it.status=it.status==='have'?'buy':'have';save();render()}break}
     case 'item-remove':{const L=S.lists[weekKey()];if(L){L.items=L.items.filter(i=>i.key!==el.dataset.key);save();render()}break}
     case 'manual-add':{
