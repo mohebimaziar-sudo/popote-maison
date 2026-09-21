@@ -579,25 +579,74 @@ function suggestWeek(){
   const wc=weekCost(w);
   toast(targets.length+' repas proposés'+(fromFreezer?' + '+fromFreezer+' du congélateur':'')+(wc.total>0?' · ≈ '+eur(wc.total)+(budget>0?' pour '+eur(budget)+' demandés':''):''));
 }
-function openSlot(key){
-  const w=week();const s=w.slots[key]||{recipeId:'',label:'',persons:S.settings.persons,freeze:false};
+let slotDraft=null; /* état du repas en cours d'édition, conservé pendant le choix d'une recette */
+function openSlot(key,pre){
+  const w=week();const base=w.slots[key]||{recipeId:'',label:'',persons:S.settings.persons,freeze:false};
+  const s=Object.assign({},base,pre||{});slotDraft={key,persons:s.persons,freeze:s.freeze,label:s.label,recipeId:s.recipeId};
   const [di,mk]=key.split('-');const ml=MEALS.find(m=>m[0]===mk)[1];
-  const opts=S.recipes.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(r=>`<option value="${r.id}"${s.recipeId===r.id?' selected':''}>${esc(r.name)}</option>`).join('');
+  const r=s.recipeId?recipeById(s.recipeId):null;const isFree=!s.recipeId&&!!s.label;
+  const c=r?costLabel(r,s.persons):null;
   sheet(`<h2>${DAYS[di]} · ${ml}</h2>
-    <label for="f-recipe">Recette</label>
-    <select id="f-recipe"><option value="">— rien de prévu —</option>${opts}<option value="__free"${!s.recipeId&&s.label?' selected':''}>Autre (restes, restaurant…)</option></select>
-    <div id="freeWrap"${!s.recipeId&&s.label?'':' hidden'}><label for="f-label">Précision</label><input type="text" id="f-label" value="${esc(s.label||'')}" placeholder="Restes de chili"></div>
+    <label>Recette</label>
+    <div class="row" style="background:var(--ground);border:1px solid var(--line);border-radius:10px;padding:8px 8px 8px 12px"><div class="grow"><div>${r?esc(r.name):'<span style=\"color:var(--muted)\">Aucune recette choisie</span>'}</div>${r?`<div class="sub">${r.minutes?r.minutes+' min · ':''}${esc(r.cat||'')}${c?' · '+c.text:''}</div>`:''}</div><button class="btn small" data-act="pick-open" data-slot="${key}">${r?'Changer':'Choisir'}</button></div>
+    <input type="hidden" id="f-recipe" value="${esc(s.recipeId||'')}">
+    <p class="note">Le sélecteur garde la recherche et les filtres du carnet : filtre d’abord, choisis ensuite.</p>
+    <label class="row" style="margin-top:12px;cursor:pointer;color:inherit;font-size:inherit"><input type="checkbox" id="f-free" style="width:auto"${isFree?' checked':''}> <span>Autre (restes, restaurant…)</span></label>
+    <div id="freeWrap"${isFree?'':' hidden'}><label for="f-label">Précision</label><input type="text" id="f-label" value="${esc(s.label||'')}" placeholder="Restes de chili"></div>
     <label for="f-persons">Nombre de personnes</label>
     <input type="number" id="f-persons" min="1" max="30" step="1" value="${s.persons||S.settings.persons}">
     <label class="row" style="margin-top:14px;cursor:pointer"><input type="checkbox" id="f-freeze" style="width:auto"${s.freeze?' checked':''}> <span>Une partie au congélateur</span></label>
     ${s.stockId?`<p class="note">Plat pris dans le congélateur. « Cuisiné » retirera les portions du stock.</p>`:''}
     ${s.cooked?`<p class="note">✓ Marqué cuisiné : les ingrédients ont été retirés du stock.</p>`:''}
     <div class="actions"><button class="btn" data-act="close">Annuler</button>${(s.recipeId||s.label)?'<button class="btn danger" data-act="slot-clear" data-slot="'+key+'">Vider</button>':''}${(s.recipeId||s.stockId)&&!s.cooked?'<button class="btn" data-act="slot-cook" data-slot="'+key+'">Cuisiné</button>':''}<button class="btn primary" data-act="slot-save" data-slot="${key}">Enregistrer</button></div>`);
-  const sel=document.getElementById('f-recipe');
-  sel.addEventListener('change',()=>{document.getElementById('freeWrap').hidden=sel.value!=='__free'});
+  const fr=document.getElementById('f-free');
+  fr.addEventListener('change',()=>{document.getElementById('freeWrap').hidden=!fr.checked;if(fr.checked)document.getElementById('f-label').focus()});
+}
+function readSlotDraft(){
+  if(!slotDraft)return;
+  const p=document.getElementById('f-persons'),f=document.getElementById('f-freeze'),l=document.getElementById('f-label');
+  if(p)slotDraft.persons=Math.max(1,parseInt(p.value,10)||slotDraft.persons);if(f)slotDraft.freeze=f.checked;if(l)slotDraft.label=l.value;
+}
+/* Sélecteur de recette : même recherche et mêmes filtres que le carnet */
+function openPicker(key){
+  readSlotDraft();
+  const n=activeCount();
+  sheet(`<h2>Choisir une recette</h2>
+    <input type="text" id="pick-q" value="${esc(recipeQuery)}" placeholder="Chercher un plat ou un ingrédient" autocomplete="off">
+    <div class="chips" style="margin-top:10px"><button class="chip${n?' on':''}" data-act="pick-filters" data-slot="${key}">☰ Filtres${n?' · '+n:''}</button>${QUICK.map(([k,v,l])=>`<button class="chip${F[k].includes(v)?' on':''}" data-act="pick-quick" data-slot="${key}" data-k="${k}" data-v="${esc(v)}">${l}</button>`).join('')}${n?`<button class="chip small ghost" data-act="pick-clear" data-slot="${key}">Tout effacer</button>`:''}</div>
+    <div id="pick-list" style="margin-top:12px">${pickList(key)}</div>
+    <div class="actions"><button class="btn" data-act="pick-back" data-slot="${key}">Retour</button></div>`);
+}
+function pickList(key){
+  const list=filterRecipes();
+  if(!list.length)return `<div class="card"><div class="empty"><b>Aucune recette ne correspond</b>Retire un filtre ou change la recherche.</div></div>`;
+  return `<p class="sub" style="margin:0 0 6px">${list.length} plat${list.length>1?'s':''}</p><div class="card">`+list.map((r,idx)=>{const c=costLabel(r);
+    return `<button class="rec" data-act="pick-recipe" data-slot="${key}" data-id="${r.id}" style="${idx?'border-top:1px solid var(--line)':''}"><div class="grow"><div class="t">${esc(r.name)}</div><div class="m">${r.persons} pers. · ${r.minutes?r.minutes+' min · ':''}${esc(r.cat||'')}</div><div style="margin-top:3px">${tagPills(r)}</div></div>${c?`<div class="cost${c.exact?'':' approx'}">${c.text}</div>`:''}</button>`}).join('')+'</div>';
+}
+function reopenSlotFromDraft(recipeId){
+  const d=slotDraft;if(!d)return;
+  openSlot(d.key,{recipeId:recipeId!==undefined?recipeId:d.recipeId,persons:d.persons,freeze:d.freeze,label:recipeId?'':d.label});
+}
+/* Depuis le carnet : mettre une recette au menu */
+function openPlan(id){
+  const r=recipeById(id);if(!r)return;const w=week();
+  const opts=[];DAYS.forEach((dn,i)=>MEALS.forEach(([mk,ml])=>{const k=i+'-'+mk;const s=w.slots[k];const cur=s?(s.recipeId?(recipeById(s.recipeId)||{}).name:s.label):'';opts.push([k,dn+' '+ml.toLowerCase()+(cur?' · '+cur:' · libre'),!cur])}));
+  const first=opts.find(o=>o[2])||opts[0];
+  sheet(`<h2>Mettre au menu</h2><p class="sub">${esc(r.name)} · semaine du ${esc(weekLabel(weekMon))}</p>
+    <label for="pl-slot">Quel repas</label><select id="pl-slot">${opts.map(o=>`<option value="${o[0]}"${o[0]===first[0]?' selected':''}>${esc(o[1])}</option>`).join('')}</select>
+    <label for="pl-persons">Nombre de personnes</label><input type="number" id="pl-persons" min="1" max="30" value="${S.settings.persons}">
+    <label class="row" style="margin-top:14px;cursor:pointer;color:inherit;font-size:inherit"><input type="checkbox" id="pl-freeze" style="width:auto"> <span>Une partie au congélateur</span></label>
+    <div class="actions"><button class="btn" data-act="recipe-open" data-id="${r.id}">Retour</button><button class="btn primary" data-act="plan-save" data-id="${r.id}">Ajouter au menu</button></div>`);
+}
+function savePlan(id){
+  const w=week();const key=document.getElementById('pl-slot').value;
+  const persons=Math.max(1,parseInt(document.getElementById('pl-persons').value,10)||S.settings.persons);
+  w.slots[key]={recipeId:id,label:'',persons,freeze:document.getElementById('pl-freeze').checked};
+  S.settings.persons=persons;save();closeSheet();tab='week';render();
+  const [di,mk]=key.split('-');toast((recipeById(id)||{}).name+' → '+DAYS[di]+' '+MEALS.find(m=>m[0]===mk)[1].toLowerCase());
 }
 function saveSlot(key){
-  const w=week();const v=document.getElementById('f-recipe').value;
+  const w=week();const v=document.getElementById('f-free').checked?'__free':document.getElementById('f-recipe').value;
   const persons=Math.max(1,parseInt(document.getElementById('f-persons').value,10)||S.settings.persons);
   const freeze=document.getElementById('f-freeze').checked;
   const old=w.slots[key]||{};
@@ -759,7 +808,7 @@ function renderRecipes(){
   });
   return h+'</div>';
 }
-function openFilters(){
+function openFilters(after){
   const draft=JSON.parse(JSON.stringify(F));
   const groupHtml=g=>`<h3 style="margin-top:16px">${g.label}</h3><div class="chips">${g.options.map(([v,l])=>{
     const cnt=filterRecipes(Object.assign({},draft,{[g.key]:[v]})).length;
@@ -772,7 +821,7 @@ function openFilters(){
     if(c){const a=draft[c.dataset.fk];const i=a.indexOf(c.dataset.fv);if(i>=0)a.splice(i,1);else a.push(c.dataset.fv);sheetBody.innerHTML=body();return}
     const b=e.target.closest('[data-act]');if(!b)return;
     if(b.dataset.act==='filters-reset-draft'){FILTER_GROUPS.forEach(g=>draft[g.key]=[]);sheetBody.innerHTML=body()}
-    else if(b.dataset.act==='filters-apply'){F=draft;closeSheet();render()}
+    else if(b.dataset.act==='filters-apply'){F=draft;if(after)after();else{closeSheet();render()}}
   };
 }
 function openRecipe(id){
@@ -782,7 +831,7 @@ function openRecipe(id){
     <h3>Ingrédients</h3><div>${r.ingredients.map((i,idx)=>{const d=rc&&rc.detail?rc.detail[idx]:null;return `<div class="ing"><span>${esc(i.name)}</span><span>${esc(fmtIng(i))}${d!=null?' <b style="font-weight:500;color:var(--accent-text)">'+eur(d)+'</b>':''}</span></div>`}).join('')}</div>
     ${c&&!c.exact&&c.sub!=='indicatif'?`<p class="note">Les montants verts viennent de tes prix, au prorata des quantités. Le reste est estimé.</p>`:c&&c.exact?`<p class="note">Coût calculé avec tes prix, au prorata des quantités utilisées.</p>`:''}
     ${r.steps.length?`<h3>Étapes</h3><ol class="steps">${r.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>`:''}
-    <div class="actions"><button class="btn" data-act="close">Fermer</button><button class="btn danger" data-act="recipe-delete" data-id="${r.id}">Supprimer</button><button class="btn primary" data-act="recipe-edit" data-id="${r.id}">Modifier</button></div>`);
+    <div class="actions"><button class="btn" data-act="close">Fermer</button><button class="btn danger" data-act="recipe-delete" data-id="${r.id}">Supprimer</button><button class="btn" data-act="recipe-edit" data-id="${r.id}">Modifier</button><button class="btn primary" data-act="recipe-plan" data-id="${r.id}">Mettre au menu</button></div>`);
 }
 function editRecipe(id){
   const r=id?recipeById(id):{id:'',name:'',persons:S.settings.persons,minutes:'',ingredients:[],steps:[],cat:'',tags:[],cost:''};
@@ -1086,6 +1135,14 @@ document.addEventListener('click',e=>{
     case 'filter-toggle':toggleFilter(el.dataset.k,el.dataset.v);render();break;
     case 'filters-clear':F=emptyFilters();render();break;
     case 'filters-open':openFilters();break;
+    case 'pick-open':openPicker(el.dataset.slot);break;
+    case 'pick-filters':openFilters(()=>openPicker(el.dataset.slot));break;
+    case 'pick-quick':toggleFilter(el.dataset.k,el.dataset.v);openPicker(el.dataset.slot);break;
+    case 'pick-clear':F=emptyFilters();openPicker(el.dataset.slot);break;
+    case 'pick-recipe':reopenSlotFromDraft(el.dataset.id);break;
+    case 'pick-back':reopenSlotFromDraft();break;
+    case 'recipe-plan':openPlan(el.dataset.id);break;
+    case 'plan-save':savePlan(el.dataset.id);break;
     case 'filters-reset-draft':case 'filters-apply':break;
     case 'suggest':openSuggest();break;
     case 'suggest-go':suggestWeek();break;
@@ -1118,6 +1175,7 @@ document.addEventListener('click',e=>{
   }
 });
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='manual-name'){e.preventDefault();document.querySelector('[data-act="manual-add"]').click()}});
+let pT;document.addEventListener('input',e=>{if(e.target&&e.target.id==='pick-q'){recipeQuery=e.target.value;clearTimeout(pT);pT=setTimeout(()=>{const l=document.getElementById('pick-list');const b=document.querySelector('[data-act="pick-back"]');if(l&&b)l.innerHTML=pickList(b.dataset.slot)},200)}});
 let qT;document.addEventListener('input',e=>{if(e.target&&e.target.id==='recipe-q'){recipeQuery=e.target.value;clearTimeout(qT);qT=setTimeout(()=>{const pos=e.target.selectionStart;render();const q=document.getElementById('recipe-q');if(q){q.focus();try{q.setSelectionRange(pos,pos)}catch(x){}}},250)}});
 
 render();
