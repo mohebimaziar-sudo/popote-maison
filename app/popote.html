@@ -306,19 +306,20 @@ function timeBand(r){if(!r.minutes)return '';return r.minutes<=20?'court':r.minu
 const costCache=new Map();
 function perPerson(r){
   if(r.id&&costCache.has(r.id))return costCache.get(r.id);
-  const c=recipeCost(r);let v=null;
-  if(c&&c.n===c.of)v=c.total/r.persons;
-  else if(typeof r.cost==='number')v=r.cost/r.persons;
+  const c=recipeCost(r);const v=c?c.total/r.persons:null;
   if(r.id)costCache.set(r.id,v);
   return v;
 }
 function costLabel(r,persons){
-  const p=persons||r.persons;const c=recipeCost(r,p);
-  if(c&&c.n===c.of)return {text:'≈ '+eur(c.total),title:'Calculé avec tes prix ('+c.store+')',exact:true};
-  if(typeof r.cost==='number')return {text:'≈ '+eur(r.cost*p/r.persons),title:'Coût indicatif, prix moyens en supermarché. Saisis tes prix pour affiner.',exact:false};
-  if(c)return {text:'≈ '+eur(c.total)+' · partiel',title:c.n+' ingrédients sur '+c.of+' avec un prix connu',exact:false};
-  return null;
+  const p=persons||r.persons;const c=recipeCost(r,p);if(!c)return null;
+  if(c.exact)return {text:'≈ '+eur(c.total),title:'Calculé avec tes prix, au prorata des quantités',exact:true,sub:'avec tes prix'};
+  if(c.n>0)return {text:'≈ '+eur(c.total),title:c.n+' ingrédient'+(c.n>1?'s':'')+' sur '+c.of+' avec tes prix, le reste estimé',exact:false,sub:c.n+'/'+c.of+' prix à toi'};
+  return {text:'≈ '+eur(c.total),title:'Coût indicatif, prix moyens en supermarché. Saisis tes prix pour affiner.',exact:false,sub:'indicatif'};
 }
+function currentSeason(d){const m=(d||new Date()).getMonth()+1;return (m>=4&&m<=9)?'été':'hiver'}
+function seasonLabel(){return currentSeason()==='été'?'printemps-été':'automne-hiver'}
+function inSeason(r){const t=r.tags||[];const s=currentSeason();return t.includes(s)||(!t.includes('été')&&!t.includes('hiver'))}
+function offSeason(r){const t=r.tags||[];return t.includes(currentSeason()==='été'?'hiver':'été')}
 function rememberExtra(p){
   const k=matchKey(p.name);let x=S.extras.find(e=>matchKey(e.name)===k);
   if(x){x.count++;x.last=today();x.qty=p.qty;x.unit=p.unit}else S.extras.push({name:p.name,qty:p.qty,unit:p.unit,count:1,last:today()});
@@ -394,11 +395,34 @@ function estimate(items){
   for(const st of STORES){let total=0,n=0;for(const it of items){const c=itemCost(it,st);if(c!=null){total+=c;n++}}out.push({store:st,total,n})}
   return out;
 }
+/* Prix moyen d'un produit : moyenne du dernier prix relevé dans chaque enseigne (au prix unitaire, donc 1 kg à 2,40 € et 500 g à 1,30 € se comparent) */
+function avgPrice(product,f){
+  const k=matchKey(product);const latest={};
+  S.prices.forEach(p=>{if(matchKey(p.product)!==k||(f&&fam(p.unit)!==f))return;const cur=latest[p.store];if(!cur||p.date>cur.date)latest[p.store]=p});
+  const es=Object.values(latest);const ups=es.map(unitPrice).filter(v=>v!=null);
+  if(!ups.length)return null;
+  return {up:ups.reduce((a,b)=>a+b,0)/ups.length,n:ups.length,unit:es[0].unit,stores:es.map(e=>e.store)};
+}
+/* Coût d'un ingrédient au prorata de la quantité utilisée (300 g de riz ne coûtent pas le sac entier) */
+function itemCostAvg(item){
+  const f=fam(item.unit);const a=avgPrice(item.name,f);if(!a)return null;
+  const pieceLike=f!=='g'&&f!=='ml';
+  if(pieceLike&&a.unit!==item.unit&&!(f==='pièce'&&fam(a.unit)==='pièce'))return null;
+  return {cost:a.up*toBase(item.qty,item.unit),n:a.n};
+}
+/* Coût d'une recette : tes prix pour les ingrédients connus, l'estimation indicative pour le reste, au prorata.
+   exact = tous les ingrédients ont un prix à toi ; n/of = combien en ont un. */
 function recipeCost(r,persons){
-  const items=r.ingredients.map(i=>({name:i.name,unit:i.unit,qty:i.qty*(persons||r.persons)/r.persons}));
-  let best=null;
-  for(const st of STORES){let total=0,n=0;for(const it of items){const c=itemCost(it,st);if(c!=null){total+=c;n++}}if(n>0&&(best==null||n>best.n||(n===best.n&&total<best.total)))best={store:st,total,n,of:items.length}}
-  return best;
+  const p=persons||r.persons;const of=r.ingredients.length;if(!of)return null;
+  let known=0,n=0;const detail=[];
+  r.ingredients.forEach(i=>{const c=itemCostAvg({name:i.name,unit:i.unit,qty:i.qty*p/r.persons});if(c){known+=c.cost;n++;detail.push(c.cost)}else detail.push(null)});
+  const indic=typeof r.cost==='number'?r.cost*p/r.persons:null;
+  let total=null,exact=false;
+  if(n===of){total=known;exact=true}
+  else if(indic!=null){total=known+indic*(of-n)/of}
+  else if(n>0){total=known}
+  if(total==null)return null;
+  return {total,n,of,exact,detail,known,indic};
 }
 
 /* ---------- tabs and render ---------- */
@@ -443,10 +467,8 @@ function renderWeek(){
 }
 function slotCost(s){
   const r=s&&s.recipeId?recipeById(s.recipeId):null;if(!r)return null;
-  const p=s.persons||r.persons;const c=recipeCost(r,p);
-  if(c&&c.n===c.of)return {v:c.total,exact:true};
-  if(typeof r.cost==='number')return {v:r.cost*p/r.persons,exact:false};
-  return null;
+  const c=recipeCost(r,s.persons||r.persons);
+  return c?{v:c.total,exact:c.exact}:null;
 }
 function weekCost(w){
   let total=0,exact=true,n=0;
@@ -462,6 +484,7 @@ function openSuggest(){
     <label class="row" style="margin-top:14px;cursor:pointer;color:inherit;font-size:inherit"><input type="checkbox" id="s-keep" style="width:auto" checked${empty?' disabled':''}> <span>Garder les repas déjà prévus</span></label>
     <label class="row" style="margin-top:10px;cursor:pointer;color:inherit;font-size:inherit"><input type="checkbox" id="s-freeze" style="width:auto"> <span>Privilégier les plats à congeler (portions doublées, une partie au congélateur)</span></label>
     <label class="row" style="margin-top:10px;cursor:pointer;color:inherit;font-size:inherit"><input type="checkbox" id="s-veg" style="width:auto" checked> <span>Au moins un repas végétarien</span></label>
+    <label class="row" style="margin-top:10px;cursor:pointer;color:inherit;font-size:inherit"><input type="checkbox" id="s-season" style="width:auto" checked> <span>Privilégier les plats de saison (${seasonLabel()})</span></label>
     ${activeCount()?`<label class="row" style="margin-top:10px;cursor:pointer;color:inherit;font-size:inherit"><input type="checkbox" id="s-usefilters" style="width:auto" checked> <span>Seulement les plats du filtre actuel du carnet (${filterRecipes().length} plats)</span></label>`:'<input type="checkbox" id="s-usefilters" hidden>'}
     <div class="actions"><button class="btn" data-act="close">Annuler</button><button class="btn primary" data-act="suggest-go">Proposer</button></div>`);
 }
@@ -469,7 +492,7 @@ function suggestWeek(){
   const w=week();const meals=document.getElementById('s-meals').value;
   const persons=Math.max(1,parseInt(document.getElementById('s-persons').value,10)||S.settings.persons);
   const budget=parseFloat(String(document.getElementById('s-budget').value).replace(',','.'))||0;
-  const keep=document.getElementById('s-keep').checked;const preferFreeze=document.getElementById('s-freeze').checked;const wantVeg=document.getElementById('s-veg').checked;
+  const keep=document.getElementById('s-keep').checked;const preferFreeze=document.getElementById('s-freeze').checked;const wantVeg=document.getElementById('s-veg').checked;const wantSeason=document.getElementById('s-season').checked;
   const keys=[];DAYS.forEach((d,i)=>{if(meals!=='dinner')keys.push(i+'-lunch');if(meals!=='lunch')keys.push(i+'-dinner')});
   const targets=keys.filter(k=>!keep||!w.slots[k]||!(w.slots[k].recipeId||w.slots[k].label));
   if(!targets.length){toast('Tous ces repas sont déjà prévus');return}
@@ -488,7 +511,9 @@ function suggestWeek(){
     const mult=r=>(preferFreeze&&autoTags(r).includes('congélateur'))?2:1;
     let cands=pool.filter(r=>!chosen.includes(r));
     if(!cands.length)cands=pool.slice();
+    if(wantSeason){const s=cands.filter(r=>!offSeason(r));if(s.length)cands=s}
     let ranked=cands.filter(r=>r.cat!==lastCat);if(!ranked.length)ranked=cands;
+    if(wantSeason){const s=ranked.filter(r=>(r.tags||[]).includes(currentSeason()));if(s.length&&Math.random()<0.5)ranked=s}
     if(!vegDone){const v=ranked.filter(r=>autoTags(r).includes('végétarien'));if(v.length&&(left<=2||Math.random()<0.4))ranked=v}
     if(preferFreeze){const f=ranked.filter(r=>autoTags(r).includes('congélateur'));if(f.length&&Math.random()<0.6)ranked=f}
     if(budget>0){
@@ -539,11 +564,11 @@ const FILTER_GROUPS=[
   {key:'protein',label:'Protéine',options:PROTEINS.map(p=>[p,p])},
   {key:'cat',label:'Type de plat',options:CATS_R.map(c=>[c,c])},
   {key:'time',label:'Temps',options:[['court','20 min ou moins'],['moyen','21 à 45 min'],['long','plus de 45 min']]},
-  {key:'season',label:'Saison',options:[['été','Plutôt été'],['hiver','Plutôt hiver']]},
+  {key:'season',label:'Saison',options:[['__now','De saison en ce moment'],['été','Plutôt été'],['hiver','Plutôt hiver']]},
   {key:'tags',label:'Pratique',options:[['rapide','Rapide'],['congélateur','À congeler'],['pas cher','Pas cher'],['enfants','Enfants'],['four','Au four'],['sans porc','Sans porc']]},
   {key:'origin',label:'Origine',options:[['mien','Mes recettes'],['catalogue','Catalogue']]},
 ];
-const QUICK=[['tags','rapide','Rapide'],['tags','congélateur','À congeler'],['protein','Végétarien','Végétarien'],['tags','pas cher','Pas cher']];
+const QUICK=[['season','__now','De saison'],['tags','rapide','Rapide'],['tags','congélateur','À congeler'],['protein','Végétarien','Végétarien'],['tags','pas cher','Pas cher']];
 let F=emptyFilters();
 function emptyFilters(){const f={};FILTER_GROUPS.forEach(g=>f[g.key]=[]);return f}
 function activeCount(){return Object.values(F).reduce((n,a)=>n+a.length,0)}
@@ -553,7 +578,7 @@ function recipeValues(r,key){
     case 'protein':return [r.protein||guessProtein(r)];
     case 'cat':return [r.cat||''];
     case 'time':return [timeBand(r)];
-    case 'season':return (r.tags||[]).filter(t=>t==='été'||t==='hiver');
+    case 'season':{const t=(r.tags||[]).filter(t=>t==='été'||t==='hiver');if(inSeason(r))t.push('__now');return t}
     case 'tags':return autoTags(r);
     case 'origin':return [r.catalog?'catalogue':'mien'];
   }
@@ -570,7 +595,7 @@ function filterRecipes(f){
   }).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
 }
 function toggleFilter(key,val){const a=F[key];const i=a.indexOf(val);if(i>=0)a.splice(i,1);else a.push(val)}
-function labelOf(key,val){const g=FILTER_GROUPS.find(g=>g.key===key);const o=g&&g.options.find(o=>o[0]===val);return o?o[1]:val}
+function labelOf(key,val){if(val==='__now')return 'De saison ('+seasonLabel()+')';const g=FILTER_GROUPS.find(g=>g.key===key);const o=g&&g.options.find(o=>o[0]===val);return o?o[1]:val}
 function tagPills(r){
   const shown=autoTags(r).filter(t=>t!=='sans porc');
   return `<span class="tag">${esc(r.cuisine||'Autre')}</span><span class="tag">${esc(r.protein||guessProtein(r))}</span>`+shown.map(t=>`<span class="tag">${esc(t)}</span>`).join('');
@@ -608,9 +633,10 @@ function openFilters(){
 }
 function openRecipe(id){
   const r=recipeById(id);if(!r)return;
-  const c=costLabel(r);
+  const c=costLabel(r);const rc=recipeCost(r);
   sheet(`<h2>${esc(r.name)}</h2><p class="sub">${r.persons} personnes${r.minutes?' · '+r.minutes+' min':''}${r.cat?' · '+esc(r.cat):''}${c?' · '+c.text+(c.exact?'':' (indicatif)'):''}</p><div style="margin-top:6px">${tagPills(r)}</div>
-    <h3>Ingrédients</h3><div>${r.ingredients.map(i=>`<div class="ing"><span>${esc(i.name)}</span><span>${esc(fmtIng(i))}</span></div>`).join('')}</div>
+    <h3>Ingrédients</h3><div>${r.ingredients.map((i,idx)=>{const d=rc&&rc.detail?rc.detail[idx]:null;return `<div class="ing"><span>${esc(i.name)}</span><span>${esc(fmtIng(i))}${d!=null?' <b style="font-weight:500;color:var(--accent-text)">'+eur(d)+'</b>':''}</span></div>`}).join('')}</div>
+    ${c&&!c.exact&&c.sub!=='indicatif'?`<p class="note">Les montants verts viennent de tes prix, au prorata des quantités. Le reste est estimé.</p>`:c&&c.exact?`<p class="note">Coût calculé avec tes prix, au prorata des quantités utilisées.</p>`:''}
     ${r.steps.length?`<h3>Étapes</h3><ol class="steps">${r.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>`:''}
     <div class="actions"><button class="btn" data-act="close">Fermer</button><button class="btn danger" data-act="recipe-delete" data-id="${r.id}">Supprimer</button><button class="btn primary" data-act="recipe-edit" data-id="${r.id}">Modifier</button></div>`);
 }

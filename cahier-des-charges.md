@@ -36,8 +36,15 @@ Toute la famille, sur téléphone. Un seul lien partagé, données communes en d
 - « Sans porc » se déduit des ingrédients (lardons, jambon, saucisse… comptent comme porc)
 - « Proposer une semaine » peut se limiter aux plats du filtre actif
 - « Rapide » (≤ 25 min) et « pas cher » (≤ 2 €/pers.) se déduisent automatiquement
-- Coût affiché : calculé avec les prix saisis quand ils couvrent tous les ingrédients,
-  sinon coût indicatif (prix moyens supermarché) marqué comme tel
+- Coût d'une recette (règle du 2026-09-21, demande de Maziar) : un produit acheté sert de
+  référence à tous les plats qui l'utilisent, au prorata de la quantité (300 g de riz = 30 %
+  du sac de 1 kg). Prix de référence = moyenne du dernier prix relevé dans chaque enseigne.
+  Les ingrédients sans prix restent sur l'estimation indicative, au prorata de leur part.
+  Affichage : « avec tes prix » quand tout est connu, « n/N prix à toi » en cours de route,
+  « indicatif » sinon. La fiche recette montre le montant vert de chaque ingrédient connu.
+- Saison : l'app connaît la saison en cours (avril-septembre = printemps-été, sinon
+  automne-hiver). Pastille « De saison » dans le carnet ; « Proposer une semaine » écarte
+  les plats de la saison opposée et privilégie ceux de la saison en cours (coché par défaut)
 - Nom, nombre de personnes de base, temps
 - Ingrédients avec quantités (recalculées selon le nombre de personnes du menu)
 - Étapes
