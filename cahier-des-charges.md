@@ -60,6 +60,37 @@ Toute la famille, sur téléphone. Un seul lien partagé, données communes en d
 - Bouton « € » sur chaque article de la liste pour noter son prix (enseigne, quantité, date) :
   tout article de course, recette ou non, entre dans le suivi des prix
 
+### 3 bis. Stock de la maison (fait le 2026-09-21)
+- Entrées : un article coché « dans le panier » au magasin entre dans le stock avec sa quantité ;
+  un ticket enregistré ajoute ce qui a été acheté (quantité du ticket)
+- Sorties : sur un repas de la semaine, « Cuisiné » retire les ingrédients au prorata des
+  personnes (seulement ce qui est en stock) ; les portions mises au congélateur deviennent
+  un « plat prêt » dans le stock
+- « Proposer une semaine » place d'abord les plats prêts du congélateur (déjà payés)
+- La liste de courses ne propose que ce qui manque : un article couvert par le stock passe en
+  « déjà à la maison (en stock) », un article partiellement couvert voit sa quantité réduite
+- Onglet Stock : frigo, congélateur, placard ; ajout et correction à la main ; date limite
+  facultative avec alerte « à consommer vite » (3 jours)
+- Règle de conception : tout s'accroche à des gestes déjà faits (cocher, enregistrer un ticket,
+  cuisiner) pour que le stock ne dérive pas ; la correction manuelle reste à un tap
+
+### Catalogue sans porc (2026-09-21, demande de Maziar)
+- Plus aucun plat à base de porc dans le catalogue. Retirés : côtes de porc, sauté de porc,
+  rôti de porc, quiche lorraine. Adaptés : bourguignon sans lardons, riz cantonais au poulet,
+  gratin de pâtes au poulet, tomates farcies au bœuf, pizza aux poivrons, crêpes et
+  croque-monsieur au jambon de dinde. Remplaçants : escalopes de poulet et pommes sautées,
+  sauté de poulet au caramel, rôti de dinde aux carottes, quiche aux poireaux
+- Le jambon de dinde ou de poulet ne compte pas comme porc pour le filtre « sans porc »
+- Une recette du catalogue modifiée par l'utilisateur devient « mes recettes » et n'est plus
+  resynchronisée par les mises à jour du catalogue
+
+### À faire : filtres régime (demande du 2026-09-21)
+- Souhait : sans glucides / pauvre en glucides, calories contrôlées, hyperprotéiné, sans farine
+  (sans gluten), sans produit industriel, ingrédients controversés
+- Approche prévue : table nutritionnelle intégrée des ingrédients courants (kcal, protéines,
+  glucides pour 100 g) pour calculer par portion ; détection par mots-clés pour « sans
+  farine », « sans produit industriel » ; liste des ingrédients controversés à définir avec Maziar
+
 ### 4. Carnet de prix et budget (version 2)
 - Chaque ingrédient a un prix par enseigne, saisi à la main au départ
 - Coût calculé par recette et pour la semaine
