@@ -116,6 +116,9 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 .chip{border:1px solid var(--line);background:var(--ground);border-radius:999px;padding:6px 12px;font-size:14px;cursor:pointer}
 .chip:hover{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-text)}
 .chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:500}
+.chip.small{padding:4px 10px;font-size:13px}
+.chip.ghost{border-color:transparent;color:var(--accent-text)}
+.chip .cnt{font-size:12px;opacity:.75;margin-left:2px}
 .rec .cost.approx{color:var(--muted)}
 .rec .tag{margin-left:0;margin-right:4px}
 @media (prefers-reduced-motion: reduce){.toast{transition:none}}
@@ -169,7 +172,7 @@ function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth
 /* Catalogue de départ : [nom, personnes, minutes, catégorie, étiquettes, coût indicatif € (pour le nombre de personnes), ingrédients, étapes] */
 const CATS_R=['Viande','Volaille','Poisson','Végétarien','Pâtes et riz','Soupe','Salade','Œufs et tartes','Mijoté'];
 const TAGS=['rapide','congélateur','végétarien','pas cher','enfants','four','persan'];
-const CATALOG_VERSION=1;
+const CATALOG_VERSION=2;
 const CATALOG=[
 ['Pâtes au pesto',4,20,'Pâtes et riz',['végétarien','enfants'],6,['400 g pâtes','1 pot pesto','50 g parmesan','30 g pignons'],['Cuire les pâtes al dente.','Mélanger avec le pesto hors du feu.','Servir avec le parmesan et les pignons.']],
 ['Pâtes au thon et tomates',4,20,'Pâtes et riz',['enfants'],7,['400 g pâtes','2 boîte thon','1 boîte tomates concassées','1 oignon','2 cs huile d’olive','1 gousse ail'],['Faire revenir l’oignon et l’ail.','Ajouter les tomates, laisser réduire 10 min, puis le thon.','Mélanger aux pâtes cuites.']],
@@ -224,10 +227,45 @@ const CATALOG=[
 ['Taboulé',6,20,'Salade',['végétarien'],6,['400 g semoule fine','4 tomates','1 concombre','1 botte menthe','1 botte persil','2 citrons','4 cs huile d’olive'],['Gonfler la semoule avec le jus de citron et l’huile.','Ajouter légumes en dés et herbes hachées.','Laisser reposer 1 h au frais.']],
 ['Salade niçoise',4,20,'Salade',[],11,['2 boîte thon','4 œuf','4 tomates','200 g haricots verts','100 g olives noires','1 salade verte','3 cs huile d’olive'],['Œufs durs, haricots verts cuits.','Assembler avec thon, tomates, olives, salade.','Assaisonner.']],
 ];
+/* Pays de cuisine, protéine principale et saison de chaque plat du catalogue */
+const CUISINES=['Française','Italienne','Persane','Asiatique','Indienne','Maghreb','Orientale','Mexicaine','Américaine','Autre'];
+const PROTEINS=['Bœuf','Veau','Agneau','Volaille','Porc','Poisson','Œufs','Végétarien'];
+const META={
+'Pâtes au pesto':['Italienne','Végétarien',''],'Pâtes au thon et tomates':['Italienne','Poisson',''],'Spaghettis bolognaise':['Italienne','Bœuf',''],'Lasagnes':['Italienne','Bœuf','hiver'],
+'Riz cantonais':['Asiatique','Porc',''],'Risotto aux champignons':['Italienne','Végétarien','hiver'],'Gratin de pâtes au jambon':['Française','Porc','hiver'],
+'Poulet rôti et pommes de terre':['Française','Volaille',''],'Poulet au curry et riz':['Indienne','Volaille',''],'Poulet basquaise':['Française','Volaille','été'],
+'Escalopes de dinde à la crème':['Française','Volaille',''],'Tajine de poulet aux olives et citron':['Maghreb','Volaille',''],'Poulet riz au safran':['Persane','Volaille',''],
+'Zereshk polo ba morgh':['Persane','Volaille',''],'Chili con carne':['Mexicaine','Bœuf','hiver'],'Hachis parmentier':['Française','Bœuf','hiver'],
+'Bœuf bourguignon':['Française','Bœuf','hiver'],'Blanquette de veau':['Française','Veau','hiver'],'Boulettes de bœuf sauce tomate':['Italienne','Bœuf',''],
+'Steak haché et haricots verts':['Française','Bœuf',''],'Côtes de porc et pommes sautées':['Française','Porc',''],'Sauté de porc au caramel':['Asiatique','Porc',''],
+'Rôti de porc aux carottes':['Française','Porc','hiver'],'Tomates farcies':['Française','Porc','été'],'Khoresh gheymeh':['Persane','Bœuf','hiver'],
+'Ghormeh sabzi':['Persane','Bœuf','hiver'],'Saumon au four et riz':['Française','Poisson',''],'Cabillaud et purée maison':['Française','Poisson',''],
+'Poisson pané et épinards':['Française','Poisson',''],'Papillotes de poisson aux légumes':['Française','Poisson','été'],'Gratin dauphinois':['Française','Végétarien','hiver'],
+'Ratatouille':['Française','Végétarien','été'],'Curry de lentilles (dahl)':['Indienne','Végétarien',''],'Wok de légumes et nouilles':['Asiatique','Végétarien',''],
+'Galettes de pommes de terre':['Française','Végétarien',''],'Gratin de courgettes':['Française','Végétarien','été'],'Chou-fleur gratiné':['Française','Végétarien','hiver'],
+'Adas polo':['Persane','Végétarien',''],'Quiche lorraine':['Française','Porc',''],'Omelette aux champignons':['Française','Œufs',''],'Kuku sabzi':['Persane','Œufs',''],
+'Crêpes salées jambon fromage':['Française','Porc',''],'Pizza maison':['Italienne','Porc',''],'Croque-monsieur et salade':['Française','Porc',''],
+'Soupe de légumes':['Française','Végétarien','hiver'],'Velouté de potiron':['Française','Végétarien','hiver'],'Soupe de lentilles corail':['Orientale','Végétarien','hiver'],
+'Couscous poulet merguez':['Maghreb','Volaille',''],'Salade César au poulet':['Américaine','Volaille','été'],'Salade de pâtes':['Italienne','Végétarien','été'],
+'Taboulé':['Orientale','Végétarien','été'],'Salade niçoise':['Française','Poisson','été']};
 function catalogRecipe(c){
-  return {id:'c'+c[0].toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+$/,''),catalog:true,name:c[0],persons:c[1],minutes:c[2],cat:c[3],tags:c[4].slice(),cost:c[5],
+  const m=META[c[0]]||['','',''];const tags=c[4].filter(t=>t!=='persan');if(m[2])tags.push(m[2]);
+  return {id:'c'+c[0].toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+$/,''),catalog:true,name:c[0],persons:c[1],minutes:c[2],cat:c[3],tags,cost:c[5],cuisine:m[0],protein:m[1],
     ingredients:c[6].map(parseIng).filter(Boolean),steps:c[7].slice()};
 }
+const PORK_WORDS=['porc','lardon','jambon','saucisse','chair à saucisse','bacon','chorizo'];
+function guessProtein(r){
+  const n=r.ingredients.map(i=>norm(i.name)).join(' | ');
+  if(PORK_WORDS.some(w=>n.includes(w)))return 'Porc';
+  if(/agneau|mouton|merguez/.test(n))return 'Agneau';
+  if(/veau/.test(n))return 'Veau';
+  if(/bœuf|boeuf|steak|viande hach/.test(n))return 'Bœuf';
+  if(/poulet|dinde|volaille|canard/.test(n))return 'Volaille';
+  if(/poisson|saumon|thon|cabillaud|crevette|colin|merlu|sardine|maquereau|dorade/.test(n))return 'Poisson';
+  if(/œuf|oeuf/.test(n))return 'Œufs';
+  return 'Végétarien';
+}
+function hasPork(r){const n=r.ingredients.map(i=>norm(i.name)).join(' | ');return r.protein==='Porc'||PORK_WORDS.some(w=>n.includes(w))}
 function seed(){
   return {settings:{persons:4,catalogVersion:CATALOG_VERSION},recipes:CATALOG.map(catalogRecipe),weeks:{},lists:{},prices:[]};
 }
@@ -244,7 +282,14 @@ function importCatalog(s){
   Object.values(s.weeks||{}).forEach(w=>Object.values(w.slots||{}).forEach(sl=>{if(sl&&remap[sl.recipeId])sl.recipeId=remap[sl.recipeId]}));
   const have=new Set(s.recipes.map(r=>matchKey(r.name)));
   CATALOG.forEach(c=>{if(!have.has(matchKey(c[0])))s.recipes.push(catalogRecipe(c))});
-  s.recipes.forEach(r=>{if(!r.tags)r.tags=[]});
+  /* version 2 : pays, protéine et saison sur les plats du catalogue déjà présents, sans toucher aux modifications de l'utilisateur */
+  s.recipes.forEach(r=>{
+    if(!r.tags)r.tags=[];
+    const m=META[r.name];
+    if(m){if(!r.cuisine)r.cuisine=m[0];if(!r.protein)r.protein=m[1];if(m[2]&&!r.tags.includes('été')&&!r.tags.includes('hiver'))r.tags.push(m[2])}
+    r.tags=r.tags.filter(t=>t!=='persan');
+    if(!r.protein)r.protein=guessProtein(r);
+  });
   s.settings.catalogVersion=CATALOG_VERSION;
 }
 let S=load();
@@ -253,13 +298,19 @@ function autoTags(r){
   const t=new Set(r.tags||[]);
   if(r.minutes&&r.minutes<=25)t.add('rapide');
   const pp=perPerson(r);if(pp!=null&&pp<=2)t.add('pas cher');
+  if((r.protein||guessProtein(r))==='Végétarien')t.add('végétarien');
+  if(!hasPork(r))t.add('sans porc');
   return Array.from(t);
 }
+function timeBand(r){if(!r.minutes)return '';return r.minutes<=20?'court':r.minutes<=45?'moyen':'long'}
+const costCache=new Map();
 function perPerson(r){
-  const c=recipeCost(r);
-  if(c&&c.n===c.of)return c.total/r.persons;
-  if(typeof r.cost==='number')return r.cost/r.persons;
-  return null;
+  if(r.id&&costCache.has(r.id))return costCache.get(r.id);
+  const c=recipeCost(r);let v=null;
+  if(c&&c.n===c.of)v=c.total/r.persons;
+  else if(typeof r.cost==='number')v=r.cost/r.persons;
+  if(r.id)costCache.set(r.id,v);
+  return v;
 }
 function costLabel(r,persons){
   const p=persons||r.persons;const c=recipeCost(r,p);
@@ -279,7 +330,7 @@ function addManual(p){
   L.items.push({key:'m-'+uid(),name:p.name,unit:f==='g'?'g':f==='ml'?'ml':p.unit,fam:f,qty:toBase(p.qty,p.unit),cat:catOf(p.name),status:'buy',manual:true});
   rememberExtra(p);save();render();
 }
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast('Impossible d’enregistrer sur cet appareil')}}
+function save(){costCache.clear();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast('Impossible d’enregistrer sur cet appareil')}}
 
 /* ---------- helpers ---------- */
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -411,6 +462,7 @@ function openSuggest(){
     <label class="row" style="margin-top:14px;cursor:pointer;color:inherit;font-size:inherit"><input type="checkbox" id="s-keep" style="width:auto" checked${empty?' disabled':''}> <span>Garder les repas déjà prévus</span></label>
     <label class="row" style="margin-top:10px;cursor:pointer;color:inherit;font-size:inherit"><input type="checkbox" id="s-freeze" style="width:auto"> <span>Privilégier les plats à congeler (portions doublées, une partie au congélateur)</span></label>
     <label class="row" style="margin-top:10px;cursor:pointer;color:inherit;font-size:inherit"><input type="checkbox" id="s-veg" style="width:auto" checked> <span>Au moins un repas végétarien</span></label>
+    ${activeCount()?`<label class="row" style="margin-top:10px;cursor:pointer;color:inherit;font-size:inherit"><input type="checkbox" id="s-usefilters" style="width:auto" checked> <span>Seulement les plats du filtre actuel du carnet (${filterRecipes().length} plats)</span></label>`:'<input type="checkbox" id="s-usefilters" hidden>'}
     <div class="actions"><button class="btn" data-act="close">Annuler</button><button class="btn primary" data-act="suggest-go">Proposer</button></div>`);
 }
 function suggestWeek(){
@@ -422,8 +474,11 @@ function suggestWeek(){
   const targets=keys.filter(k=>!keep||!w.slots[k]||!(w.slots[k].recipeId||w.slots[k].label));
   if(!targets.length){toast('Tous ces repas sont déjà prévus');return}
   const used=new Set(Object.values(w.slots).filter(s=>s&&s.recipeId).map(s=>s.recipeId));
-  let pool=S.recipes.filter(r=>!used.has(r.id)&&r.ingredients.length);
-  if(pool.length<targets.length)pool=S.recipes.filter(r=>r.ingredients.length);
+  const useF=document.getElementById('s-usefilters').checked&&activeCount()>0;
+  const base=useF?S.recipes.filter(r=>matchesFilters(r,F)):S.recipes;
+  let pool=base.filter(r=>!used.has(r.id)&&r.ingredients.length);
+  if(pool.length<targets.length)pool=base.filter(r=>r.ingredients.length);
+  if(!pool.length){toast('Aucun plat ne correspond au filtre');return}
   const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
   pool=shuffle(pool.slice());
   const pp=r=>{const v=perPerson(r);return v==null?3.5:v};
@@ -477,30 +532,79 @@ function saveSlot(key){
 }
 
 /* ---------- recipes ---------- */
-let recipeQuery='',recipeFilter='tous';
-const FILTERS=[['tous','Tous'],['rapide','Rapide'],['congélateur','À congeler'],['végétarien','Végétarien'],['pas cher','Pas cher'],['enfants','Enfants'],['four','Au four'],['persan','Persan'],['mien','Mes recettes']];
-function filterRecipes(){
-  const q=norm(recipeQuery);
+let recipeQuery='';
+/* Filtres combinables : à l'intérieur d'un groupe c'est OU, entre les groupes c'est ET */
+const FILTER_GROUPS=[
+  {key:'cuisine',label:'Pays',options:CUISINES.map(c=>[c,c])},
+  {key:'protein',label:'Protéine',options:PROTEINS.map(p=>[p,p])},
+  {key:'cat',label:'Type de plat',options:CATS_R.map(c=>[c,c])},
+  {key:'time',label:'Temps',options:[['court','20 min ou moins'],['moyen','21 à 45 min'],['long','plus de 45 min']]},
+  {key:'season',label:'Saison',options:[['été','Plutôt été'],['hiver','Plutôt hiver']]},
+  {key:'tags',label:'Pratique',options:[['rapide','Rapide'],['congélateur','À congeler'],['pas cher','Pas cher'],['enfants','Enfants'],['four','Au four'],['sans porc','Sans porc']]},
+  {key:'origin',label:'Origine',options:[['mien','Mes recettes'],['catalogue','Catalogue']]},
+];
+const QUICK=[['tags','rapide','Rapide'],['tags','congélateur','À congeler'],['protein','Végétarien','Végétarien'],['tags','pas cher','Pas cher']];
+let F=emptyFilters();
+function emptyFilters(){const f={};FILTER_GROUPS.forEach(g=>f[g.key]=[]);return f}
+function activeCount(){return Object.values(F).reduce((n,a)=>n+a.length,0)}
+function recipeValues(r,key){
+  switch(key){
+    case 'cuisine':return [r.cuisine||'Autre'];
+    case 'protein':return [r.protein||guessProtein(r)];
+    case 'cat':return [r.cat||''];
+    case 'time':return [timeBand(r)];
+    case 'season':return (r.tags||[]).filter(t=>t==='été'||t==='hiver');
+    case 'tags':return autoTags(r);
+    case 'origin':return [r.catalog?'catalogue':'mien'];
+  }
+  return [];
+}
+function matchesFilters(r,f){
+  return FILTER_GROUPS.every(g=>{const sel=f[g.key];if(!sel.length)return true;const vals=recipeValues(r,g.key);return sel.some(v=>vals.includes(v))});
+}
+function filterRecipes(f){
+  f=f||F;const q=norm(recipeQuery);
   return S.recipes.filter(r=>{
     if(q&&!norm(r.name).includes(q)&&!r.ingredients.some(i=>norm(i.name).includes(q)))return false;
-    if(recipeFilter==='tous')return true;
-    if(recipeFilter==='mien')return !r.catalog;
-    return autoTags(r).includes(recipeFilter);
+    return matchesFilters(r,f);
   }).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
 }
-function tagPills(r){return autoTags(r).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}
+function toggleFilter(key,val){const a=F[key];const i=a.indexOf(val);if(i>=0)a.splice(i,1);else a.push(val)}
+function labelOf(key,val){const g=FILTER_GROUPS.find(g=>g.key===key);const o=g&&g.options.find(o=>o[0]===val);return o?o[1]:val}
+function tagPills(r){
+  const shown=autoTags(r).filter(t=>t!=='sans porc');
+  return `<span class="tag">${esc(r.cuisine||'Autre')}</span><span class="tag">${esc(r.protein||guessProtein(r))}</span>`+shown.map(t=>`<span class="tag">${esc(t)}</span>`).join('');
+}
 function renderRecipes(){
-  const list=filterRecipes();
+  const list=filterRecipes();const n=activeCount();
+  const active=[];FILTER_GROUPS.forEach(g=>F[g.key].forEach(v=>active.push([g.key,v])));
   let h=`<div class="row between" style="margin-top:6px"><div><h2>Carnet de recettes</h2><p class="sub">${S.recipes.length} recette${S.recipes.length>1?'s':''}</p></div><button class="btn primary" data-act="recipe-new">+ Nouvelle</button></div>
   <input type="text" id="recipe-q" value="${esc(recipeQuery)}" placeholder="Chercher un plat ou un ingrédient" style="margin-top:12px" autocomplete="off">
-  <div class="chips" style="margin-top:10px">${FILTERS.map(([k,l])=>`<button class="chip${recipeFilter===k?' on':''}" data-act="recipe-filter" data-f="${k}">${l}</button>`).join('')}</div>`;
-  if(!list.length)return h+`<div class="card" style="margin-top:14px"><div class="empty"><b>Aucune recette ne correspond</b>Change de filtre ou ajoute la tienne avec « + Nouvelle ».</div></div>`;
+  <div class="chips" style="margin-top:10px"><button class="chip${n?' on':''}" data-act="filters-open">☰ Filtres${n?' · '+n:''}</button>${QUICK.map(([k,v,l])=>`<button class="chip${F[k].includes(v)?' on':''}" data-act="filter-toggle" data-k="${k}" data-v="${esc(v)}">${l}</button>`).join('')}</div>`;
+  if(active.length)h+=`<div class="chips" style="margin-top:8px">${active.map(([k,v])=>`<button class="chip small" data-act="filter-toggle" data-k="${k}" data-v="${esc(v)}" aria-label="Retirer le filtre ${esc(labelOf(k,v))}">${esc(labelOf(k,v))} ×</button>`).join('')}<button class="chip small ghost" data-act="filters-clear">Tout effacer</button></div>`;
+  if(!list.length)return h+`<div class="card" style="margin-top:14px"><div class="empty"><b>Aucune recette ne correspond</b>Retire un filtre, ou ajoute la tienne avec « + Nouvelle ».</div></div>`;
   h+=`<p class="sub" style="margin:12px 0 6px">${list.length} plat${list.length>1?'s':''}</p><div class="card">`;
   list.forEach((r,idx)=>{
     const c=costLabel(r);
     h+=`<button class="rec" data-act="recipe-open" data-id="${r.id}" style="${idx?'border-top:1px solid var(--line)':''}"><div class="grow"><div class="t">${esc(r.name)}</div><div class="m">${r.persons} pers. · ${r.minutes?r.minutes+' min · ':''}${esc(r.cat||'')}</div><div style="margin-top:3px">${tagPills(r)}</div></div>${c?`<div class="cost${c.exact?'':' approx'}" title="${esc(c.title)}">${c.text}</div>`:''}</button>`;
   });
   return h+'</div>';
+}
+function openFilters(){
+  const draft=JSON.parse(JSON.stringify(F));
+  const groupHtml=g=>`<h3 style="margin-top:16px">${g.label}</h3><div class="chips">${g.options.map(([v,l])=>{
+    const cnt=filterRecipes(Object.assign({},draft,{[g.key]:[v]})).length;
+    return `<button class="chip${draft[g.key].includes(v)?' on':''}" data-fk="${g.key}" data-fv="${esc(v)}">${esc(l)} <span class="cnt">${cnt}</span></button>`}).join('')}</div>`;
+  const body=()=>`<h2>Filtrer les recettes</h2><p class="sub">Combine ce que tu veux : par exemple Persane + Bœuf, ou Poisson + 20 min.</p>${FILTER_GROUPS.map(groupHtml).join('')}
+    <div class="actions"><button class="btn" data-act="filters-reset-draft">Effacer</button><button class="btn primary" data-act="filters-apply">Voir ${filterRecipes(draft).length} plat${filterRecipes(draft).length>1?'s':''}</button></div>`;
+  sheet(body());
+  sheetClick=e=>{
+    const c=e.target.closest('[data-fk]');
+    if(c){const a=draft[c.dataset.fk];const i=a.indexOf(c.dataset.fv);if(i>=0)a.splice(i,1);else a.push(c.dataset.fv);sheetBody.innerHTML=body();return}
+    const b=e.target.closest('[data-act]');if(!b)return;
+    if(b.dataset.act==='filters-reset-draft'){FILTER_GROUPS.forEach(g=>draft[g.key]=[]);sheetBody.innerHTML=body()}
+    else if(b.dataset.act==='filters-apply'){F=draft;closeSheet();render()}
+  };
 }
 function openRecipe(id){
   const r=recipeById(id);if(!r)return;
@@ -516,9 +620,11 @@ function editRecipe(id){
   sheet(`<h2>${id?'Modifier la recette':'Nouvelle recette'}</h2>
     <label for="r-name">Nom du plat</label><input type="text" id="r-name" value="${esc(r.name)}" placeholder="Gratin de courgettes">
     <div class="grid3"><div><label for="r-persons">Pour combien</label><input type="number" id="r-persons" min="1" value="${r.persons}"></div><div><label for="r-minutes">Temps (min)</label><input type="number" id="r-minutes" min="0" value="${esc(r.minutes||'')}"></div><div><label for="r-cost">Coût indicatif €</label><input type="number" id="r-cost" min="0" step="0.5" inputmode="decimal" value="${esc(r.cost===undefined||r.cost===null?'':r.cost)}" placeholder="12"></div></div>
-    <label for="r-cat">Catégorie</label><select id="r-cat"><option value="">—</option>${CATS_R.map(c=>`<option${r.cat===c?' selected':''}>${c}</option>`).join('')}</select>
-    <label>Étiquettes</label><div class="chips">${['congélateur','végétarien','enfants','four','persan'].map(t=>`<label class="chip" style="display:inline-flex;align-items:center;gap:6px;margin:0;color:inherit;font-size:14px"><input type="checkbox" class="r-tag" value="${t}" style="width:auto"${tags.includes(t)?' checked':''}>${t}</label>`).join('')}</div>
-    <p class="note">« Rapide » et « pas cher » se déduisent tout seuls du temps et du coût.</p>
+    <div class="grid3"><div><label for="r-cat">Type de plat</label><select id="r-cat"><option value="">—</option>${CATS_R.map(c=>`<option${r.cat===c?' selected':''}>${c}</option>`).join('')}</select></div>
+    <div><label for="r-cuisine">Pays</label><select id="r-cuisine"><option value="">—</option>${CUISINES.map(c=>`<option${r.cuisine===c?' selected':''}>${c}</option>`).join('')}</select></div>
+    <div><label for="r-protein">Protéine</label><select id="r-protein"><option value="">auto</option>${PROTEINS.map(p=>`<option${r.protein===p?' selected':''}>${p}</option>`).join('')}</select></div></div>
+    <label>Étiquettes</label><div class="chips">${['congélateur','enfants','four','été','hiver'].map(t=>`<label class="chip" style="display:inline-flex;align-items:center;gap:6px;margin:0;color:inherit;font-size:14px"><input type="checkbox" class="r-tag" value="${t}" style="width:auto"${tags.includes(t)?' checked':''}>${t}</label>`).join('')}</div>
+    <p class="note">« Rapide », « pas cher », « végétarien » et « sans porc » se déduisent tout seuls du temps, du coût et des ingrédients.</p>
     <label for="r-ings">Ingrédients, un par ligne (quantité, unité, nom)</label>
     <textarea id="r-ings" placeholder="300 g riz basmati&#10;4 cuisses de poulet&#10;1 oignon&#10;1 pincée safran">${esc(r.ingredients.map(ingLine).join('\n'))}</textarea>
     <p class="note">Unités reconnues : g, kg, ml, cl, l, cs, cc, pincée, botte, boîte, pot, sachet, tranche, gousse, paquet, bouteille.</p>
@@ -534,9 +640,11 @@ function saveRecipe(id){
   const ingredients=document.getElementById('r-ings').value.split('\n').map(parseIng).filter(Boolean);
   const steps=document.getElementById('r-steps').value.split('\n').map(s=>s.trim()).filter(Boolean);
   const cat=document.getElementById('r-cat').value;const tags=Array.from(document.querySelectorAll('.r-tag:checked')).map(c=>c.value);
+  const cuisine=document.getElementById('r-cuisine').value;let protein=document.getElementById('r-protein').value;
   const costV=parseFloat(String(document.getElementById('r-cost').value).replace(',','.'));const cost=costV>0?costV:null;
-  if(id){const r=recipeById(id);Object.assign(r,{name,persons,minutes,ingredients,steps,cat,tags,cost});delete r.sample}
-  else S.recipes.push({id:uid(),name,persons,minutes,ingredients,steps,cat,tags,cost});
+  if(!protein)protein=guessProtein({ingredients});
+  if(id){const r=recipeById(id);Object.assign(r,{name,persons,minutes,ingredients,steps,cat,tags,cost,cuisine,protein});delete r.sample}
+  else S.recipes.push({id:uid(),name,persons,minutes,ingredients,steps,cat,tags,cost,cuisine,protein});
   save();closeSheet();render();toast('Recette enregistrée');
 }
 function deleteRecipe(id){
@@ -772,8 +880,10 @@ document.addEventListener('change',e=>{if(e.target&&e.target.id==='ticket-file')
 
 /* ---------- sheet, toast, events ---------- */
 const sheetEl=document.getElementById('sheet'),sheetBody=document.getElementById('sheetBody');
-function sheet(html){sheetBody.innerHTML=html;sheetEl.hidden=false;const f=sheetBody.querySelector('input,select,textarea');if(f)setTimeout(()=>f.focus(),50)}
-function closeSheet(){sheetEl.hidden=true;sheetBody.innerHTML=''}
+let sheetClick=null;
+sheetBody.addEventListener('click',e=>{if(sheetClick)sheetClick(e)});
+function sheet(html){sheetClick=null;sheetBody.innerHTML=html;sheetEl.hidden=false;const f=sheetBody.querySelector('input,select,textarea');if(f)setTimeout(()=>f.focus(),50)}
+function closeSheet(){sheetClick=null;sheetEl.hidden=true;sheetBody.innerHTML=''}
 sheetEl.addEventListener('click',e=>{if(e.target===sheetEl)closeSheet()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!sheetEl.hidden)closeSheet()});
 let toastT;function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200)}
@@ -792,7 +902,10 @@ document.addEventListener('click',e=>{
     case 'generate':generateList();break;
     case 'close':closeSheet();break;
     case 'recipe-new':editRecipe('');break;
-    case 'recipe-filter':recipeFilter=el.dataset.f;render();break;
+    case 'filter-toggle':toggleFilter(el.dataset.k,el.dataset.v);render();break;
+    case 'filters-clear':F=emptyFilters();render();break;
+    case 'filters-open':openFilters();break;
+    case 'filters-reset-draft':case 'filters-apply':break;
     case 'suggest':openSuggest();break;
     case 'suggest-go':suggestWeek();break;
     case 'recipe-open':openRecipe(el.dataset.id);break;

@@ -26,8 +26,15 @@ Toute la famille, sur téléphone. Un seul lien partagé, données communes en d
 ### 2. Recette
 - Catalogue de départ (2026-09-21) : 52 plats familiaux (classiques français + plats persans),
   chacun avec ingrédients pour N personnes, temps, catégorie, étiquettes et coût indicatif
-- Recherche par nom ou ingrédient ; filtres : rapide, à congeler, végétarien, pas cher,
-  enfants, au four, persan, mes recettes
+- Recherche par nom ou ingrédient
+- Filtres combinables (2026-09-21, demande de Maziar) : pays de cuisine (française, italienne,
+  persane, asiatique, indienne, maghreb, orientale, mexicaine, américaine), protéine (bœuf, veau,
+  agneau, volaille, porc, poisson, œufs, végétarien), type de plat, temps (≤ 20 / 21-45 / > 45 min),
+  saison (été / hiver), pratique (rapide, à congeler, pas cher, enfants, au four, sans porc),
+  origine (mes recettes / catalogue). OU à l'intérieur d'un groupe, ET entre les groupes ;
+  chaque option affiche le nombre de plats qu'elle donnerait
+- « Sans porc » se déduit des ingrédients (lardons, jambon, saucisse… comptent comme porc)
+- « Proposer une semaine » peut se limiter aux plats du filtre actif
 - « Rapide » (≤ 25 min) et « pas cher » (≤ 2 €/pers.) se déduisent automatiquement
 - Coût affiché : calculé avec les prix saisis quand ils couvrent tous les ingrédients,
   sinon coût indicatif (prix moyens supermarché) marqué comme tel
