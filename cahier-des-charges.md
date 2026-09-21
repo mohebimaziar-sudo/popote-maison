@@ -71,7 +71,10 @@ Toute la famille, sur téléphone. Un seul lien partagé, données communes en d
   Le fichier `app/popote.html` reste la source ; `python build.py` produit le dossier `site/`
   (index.html, manifest, service worker, icônes) prêt à déployer.
 - Étapes pour l'indépendance complète :
-  1. Hébergement gratuit (GitHub Pages recommandé) : compte GitHub à créer par Maziar
+  1. Hébergement : FAIT le 2026-09-21. Dépôt GitHub mohebimaziar-sudo/popote-maison
+     (public : le code est visible, pas les données), GitHub Pages sur main, dossier /docs.
+     Adresse de l'app : https://mohebimaziar-sudo.github.io/popote-maison/
+     Mise à jour : modifier app/popote.html, `python build.py`, commit, `git push`.
   2. Données partagées famille : base en ligne gratuite (Supabase) : compte à créer par Maziar
   3. Lecture de ticket : petite fonction serveur qui appelle un service d'analyse d'image
      (clé API à payer à l'usage, quelques centimes par ticket)
