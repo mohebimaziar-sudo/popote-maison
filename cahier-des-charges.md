@@ -29,6 +29,11 @@ Toute la famille, sur téléphone. Un seul lien partagé, données communes en d
 - Marquage « à congeler » pour les plats cuisinés en avance (à préciser)
 
 ### 2. Recette
+- Vue par défaut de l'onglet (2026-09-21, demande de Maziar) : « Cette semaine », les recettes
+  complètes des plats choisis dans le menu, dans l'ordre des repas, quantités ajustées au
+  nombre de personnes, avec coût et boutons « Cuisiné », « Changer le repas », « Fiche ».
+  « Tout le carnet » (recherche, filtres, 52 plats) reste à un tap. Si rien n'est planifié,
+  l'onglet s'ouvre directement sur le carnet
 - Catalogue de départ (2026-09-21) : 52 plats familiaux (classiques français + plats persans),
   chacun avec ingrédients pour N personnes, temps, catégorie, étiquettes et coût indicatif
 - Recherche par nom ou ingrédient

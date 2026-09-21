@@ -119,6 +119,9 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 .chip:hover{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-text)}
 .chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:500}
 .chip.small{padding:4px 10px;font-size:13px}
+.seg{display:flex;background:var(--surface-2);border-radius:10px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:transparent;border-radius:8px;padding:8px 10px;font-size:14px;color:var(--muted);cursor:pointer}
+.seg button.on{background:var(--surface);color:var(--ink);font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,.08)}
 .chip.ghost{border-color:transparent;color:var(--accent-text)}
 .chip .cnt{font-size:12px;opacity:.75;margin-left:2px}
 .rec .cost.approx{color:var(--muted)}
@@ -772,10 +775,41 @@ function tagPills(r){
   const shown=autoTags(r).filter(t=>t!=='sans porc');
   return `<span class="tag">${esc(r.cuisine||'Autre')}</span><span class="tag">${esc(r.protein||guessProtein(r))}</span>`+shown.map(t=>`<span class="tag">${esc(t)}</span>`).join('');
 }
+let recipesView=null; /* 'week' = les plats de la semaine en entier, 'all' = tout le carnet */
+function plannedSlots(){
+  const w=week();const out=[];
+  DAYS.forEach((dn,i)=>MEALS.forEach(([mk,ml])=>{const s=w.slots[i+'-'+mk];if(s&&(s.recipeId||s.label))out.push({key:i+'-'+mk,day:dn,meal:ml,s,r:s.recipeId?recipeById(s.recipeId):null})}));
+  return out;
+}
+function renderWeekRecipes(){
+  const slots=plannedSlots();
+  if(!slots.length)return `<div class="card" style="margin-top:14px"><div class="empty"><b>Rien de prévu cette semaine</b>Planifie des repas dans l’onglet Semaine, ou ouvre tout le carnet pour choisir.</div></div>`;
+  let h=`<p class="sub" style="margin:12px 0 6px">Semaine du ${esc(weekLabel(weekMon))} · ${slots.length} repas, quantités ajustées au nombre de personnes</p>`;
+  slots.forEach(({key,day,meal,s,r})=>{
+    if(!r){h+=`<div class="card" style="margin-top:10px;padding:12px 14px"><div class="row between"><div><b>${day} · ${meal}</b><div class="sub">${s.stockId?'❄ ':''}${esc(s.label)}${s.persons?' · '+s.persons+' pers.':''}</div></div>${s.stockId&&!s.cooked?`<button class="btn small" data-act="slot-cook" data-slot="${key}">Cuisiné</button>`:''}</div></div>`;return}
+    const p=s.persons||r.persons;const factor=p/r.persons;const c=costLabel(r,p);const rc=recipeCost(r,p);
+    h+=`<div class="card" style="margin-top:10px">
+      <div style="padding:12px 14px 4px"><div class="row between"><div class="grow"><div class="sub" style="margin:0">${day} · ${meal}${s.cooked?' · ✓ cuisiné':''}${s.freeze?' · ❄ une partie au congélateur':''}</div><h2 style="font-size:19px">${esc(r.name)}</h2><div class="sub">${p} pers.${r.minutes?' · '+r.minutes+' min':''}${c?' · '+c.text+(c.exact?'':' ('+c.sub+')'):''}</div></div></div></div>
+      <div style="padding:0 14px 6px"><h3 style="margin:10px 0 4px">Ingrédients</h3>${r.ingredients.map((i,idx)=>{const q={qty:i.qty*factor,unit:i.unit};const d=rc&&rc.detail?rc.detail[idx]:null;return `<div class="ing"><span>${esc(i.name)}</span><span>${esc(fmtIng(q))}${d!=null?' <b style="font-weight:500;color:var(--accent-text)">'+eur(d)+'</b>':''}</span></div>`}).join('')}
+      ${r.steps.length?`<h3 style="margin:12px 0 4px">Étapes</h3><ol class="steps" style="margin-bottom:6px">${r.steps.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>`:''}</div>
+      <div class="row" style="padding:8px 14px 12px;gap:8px;flex-wrap:wrap"><button class="btn small" data-act="slot" data-slot="${key}">Changer le repas</button><button class="btn small" data-act="recipe-open" data-id="${r.id}">Fiche</button>${!s.cooked?`<button class="btn small primary" data-act="slot-cook" data-slot="${key}">Cuisiné</button>`:''}</div>
+    </div>`;
+  });
+  return h;
+}
 function renderRecipes(){
+  const planned=plannedSlots().length;
+  if(recipesView===null)recipesView=planned?'week':'all';
+  const seg=`<div class="seg" style="margin-top:12px"><button class="${recipesView==='week'?'on':''}" data-act="recipes-view" data-v="week">Cette semaine${planned?' · '+planned:''}</button><button class="${recipesView==='all'?'on':''}" data-act="recipes-view" data-v="all">Tout le carnet · ${S.recipes.length}</button></div>`;
+  if(recipesView==='week'){
+    return `<div class="row between" style="margin-top:6px"><div><h2>Recettes de la semaine</h2><p class="sub">Tout ce qu’il faut pour cuisiner, dans l’ordre des repas</p></div><button class="btn primary" data-act="recipe-new">+ Nouvelle</button></div>`+seg+renderWeekRecipes();
+  }
+  return renderAllRecipes(seg);
+}
+function renderAllRecipes(seg){
   const list=filterRecipes();const n=activeCount();
   const active=[];FILTER_GROUPS.forEach(g=>F[g.key].forEach(v=>active.push([g.key,v])));
-  let h=`<div class="row between" style="margin-top:6px"><div><h2>Carnet de recettes</h2><p class="sub">${S.recipes.length} recette${S.recipes.length>1?'s':''}</p></div><button class="btn primary" data-act="recipe-new">+ Nouvelle</button></div>
+  let h=`<div class="row between" style="margin-top:6px"><div><h2>Carnet de recettes</h2><p class="sub">${S.recipes.length} recette${S.recipes.length>1?'s':''}</p></div><button class="btn primary" data-act="recipe-new">+ Nouvelle</button></div>${seg}
   <input type="text" id="recipe-q" value="${esc(recipeQuery)}" placeholder="Chercher un plat ou un ingrédient" style="margin-top:12px" autocomplete="off">
   <div class="chips" style="margin-top:10px"><button class="chip${n?' on':''}" data-act="filters-open">☰ Filtres${n?' · '+n:''}</button>${QUICK.map(([k,v,l])=>`<button class="chip${F[k].includes(v)?' on':''}" data-act="filter-toggle" data-k="${k}" data-v="${esc(v)}">${l}</button>`).join('')}</div>`;
   if(active.length)h+=`<div class="chips" style="margin-top:8px">${active.map(([k,v])=>`<button class="chip small" data-act="filter-toggle" data-k="${k}" data-v="${esc(v)}" aria-label="Retirer le filtre ${esc(labelOf(k,v))}">${esc(labelOf(k,v))} ×</button>`).join('')}<button class="chip small ghost" data-act="filters-clear">Tout effacer</button></div>`;
@@ -1114,6 +1148,7 @@ document.addEventListener('click',e=>{
     case 'filter-toggle':toggleFilter(el.dataset.k,el.dataset.v);render();break;
     case 'filters-clear':F=emptyFilters();render();break;
     case 'filters-open':openFilters();break;
+    case 'recipes-view':recipesView=el.dataset.v;render();break;
     case 'pick-open':openPicker(el.dataset.slot);break;
     case 'pick-filters':openFilters(()=>openPicker(el.dataset.slot));break;
     case 'pick-quick':toggleFilter(el.dataset.k,el.dataset.v);openPicker(el.dataset.slot);break;
